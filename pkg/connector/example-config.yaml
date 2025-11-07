@@ -1,0 +1,16 @@
+networks:
+    libera:
+        displayname: Libera.Chat
+        address: irc.libera.chat:6697
+        tls: true
+        ctcp: false
+    oftc:
+        displayname: OFTC
+        address: irc.oftc.net:6697
+        tls: true
+        ctcp: false
+    ircnet:
+        displayname: IRCnet
+        address: irc.swepipe.net:6697
+        tls: true
+        ctcp: false

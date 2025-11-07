@@ -1,0 +1,13 @@
+.idea
+
+*.yaml
+!.pre-commit-config.yaml
+!pkg/connector/example-config.yaml
+
+*.json
+*.db*
+*.log
+*.bak
+
+/mautrix-irc
+/start

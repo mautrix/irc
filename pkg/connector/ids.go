@@ -47,8 +47,10 @@ func makeMessageID(netName string, msg *ircmsg.Message) networkid.MessageID {
 	return networkid.MessageID(fmt.Sprintf("%s:hash:%s:%s:%d:%x", netName, msg.Params[0], msg.Source, approxTime, hash[:16]))
 }
 
-func makePortalID(netName, channel string) networkid.PortalID {
-	return networkid.PortalID(fmt.Sprintf("%s:%s", netName, channel))
+func (ic *IRCClient) makePortalID(channel string) networkid.PortalID {
+	mappedChannel := ic.isupport.CaseMapping(channel)
+	ic.casemappedNames.Set(mappedChannel, channel)
+	return networkid.PortalID(fmt.Sprintf("%s:%s", ic.NetMeta.Name, mappedChannel))
 }
 
 func parsePortalID(portalID networkid.PortalID) (netName, channel string, err error) {
@@ -60,20 +62,12 @@ func parsePortalID(portalID networkid.PortalID) (netName, channel string, err er
 	return parts[0], parts[1], nil
 }
 
-func (ic *IRCClient) getChanTypes() string {
-	ct := ic.Conn.ISupport()["CHANTYPES"]
-	if ct == "" {
-		ct = "#"
-	}
-	return ct
-}
-
 func (ic *IRCClient) isDM(channel string) bool {
-	return !strings.ContainsRune(ic.getChanTypes(), rune(channel[0]))
+	return !strings.ContainsRune(ic.isupport.ChanTypes, rune(channel[0]))
 }
 
 func (ic *IRCClient) makePortalKey(channel string) (key networkid.PortalKey) {
-	key.ID = makePortalID(ic.NetMeta.Name, channel)
+	key.ID = ic.makePortalID(channel)
 	if ic.Main.Bridge.Config.SplitPortals || ic.isDM(channel) {
 		key.Receiver = ic.UserLogin.ID
 	}
@@ -82,7 +76,7 @@ func (ic *IRCClient) makePortalKey(channel string) (key networkid.PortalKey) {
 
 func (ic *IRCClient) IsThisUser(ctx context.Context, userID networkid.UserID) bool {
 	netName, nick, err := ic.parseUserID(userID)
-	return err == nil && netName == ic.NetMeta.Name && nick == ic.Conn.CurrentNick()
+	return err == nil && netName == ic.NetMeta.Name && nick == ic.isupport.CaseMapping(ic.Conn.CurrentNick())
 }
 
 func (ic *IRCClient) parseUserID(userID networkid.UserID) (netName, nick string, err error) {
@@ -98,7 +92,9 @@ func (ic *IRCClient) makeUserID(nick string) networkid.UserID {
 	if nick == "" {
 		return ""
 	}
-	return networkid.UserID(ic.NetMeta.Name + "_" + nick)
+	mappedNick := ic.isupport.CaseMapping(nick)
+	ic.casemappedNames.Set(mappedNick, nick)
+	return networkid.UserID(fmt.Sprintf("%s_%s", ic.NetMeta.Name, mappedNick))
 }
 
 func (ic *IRCClient) makeEventSender(nick string) bridgev2.EventSender {

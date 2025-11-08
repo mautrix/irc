@@ -78,6 +78,7 @@ func (ic *IRCClient) GetChatInfo(ctx context.Context, portal *bridgev2.Portal) (
 	} else if netName != ic.NetMeta.Name {
 		return nil, fmt.Errorf("%w (netname mismatch %q != %q)", bridgev2.ErrResolveIdentifierTryNext, netName, ic.NetMeta.Name)
 	}
+	realChannelName := ic.casemappedNames.GetDefault(channel, channel)
 	var info bridgev2.ChatInfo
 	if ic.isDM(channel) {
 		info = bridgev2.ChatInfo{
@@ -85,7 +86,7 @@ func (ic *IRCClient) GetChatInfo(ctx context.Context, portal *bridgev2.Portal) (
 				IsFull:                     true,
 				ExcludeChangesFromTimeline: true,
 				TotalMemberCount:           2,
-				OtherUserID:                ic.makeUserID(channel),
+				OtherUserID:                ic.makeUserID(realChannelName),
 				MemberMap:                  bridgev2.ChatMemberMap{},
 			},
 			Type: ptr.Ptr(database.RoomTypeDM),
@@ -94,7 +95,7 @@ func (ic *IRCClient) GetChatInfo(ctx context.Context, portal *bridgev2.Portal) (
 			EventSender: ic.makeEventSender(ic.Conn.CurrentNick()),
 		})
 		info.Members.MemberMap.Add(bridgev2.ChatMember{
-			EventSender: ic.makeEventSender(channel),
+			EventSender: ic.makeEventSender(realChannelName),
 		})
 	} else {
 		realInfo := ic.getCachedChatInfo(channel)
@@ -135,8 +136,9 @@ func (ic *IRCClient) GetUserInfo(ctx context.Context, ghost *bridgev2.Ghost) (*b
 	if ic.NetMeta.TLS {
 		secure = "s"
 	}
+	realNick := ic.casemappedNames.GetDefault(nick, nick)
 	return &bridgev2.UserInfo{
 		Identifiers: []string{fmt.Sprintf("irc%s://%s/%s", secure, ic.NetMeta.Address, nick)},
-		Name:        &nick,
+		Name:        &realNick,
 	}, nil
 }

@@ -18,11 +18,13 @@ package connector
 
 import (
 	"fmt"
+	"strings"
 )
 
 type ISupport struct {
-	ChanTypes  string
-	PLPrefixes map[byte]int
+	ChanTypes   string
+	CaseMapping StringReplacer
+	PLPrefixes  map[byte]int
 }
 
 var defaultISupport = ParseISupport(map[string]string{})
@@ -53,6 +55,11 @@ func ParseISupport(raw map[string]string) *ISupport {
 	} else {
 		isupport.ChanTypes = "#"
 	}
+	if cm, ok := raw["CASEMAPPING"]; ok {
+		isupport.CaseMapping = parseCasemap(cm)
+	} else {
+		isupport.CaseMapping = casemapRFC1459.Replace
+	}
 	if prefixes, ok := raw["PREFIX"]; ok {
 		var modes, symbols string
 		_, err := fmt.Sscanf(prefixes, "(%s)%s", &modes, &symbols)
@@ -66,3 +73,41 @@ func ParseISupport(raw map[string]string) *ISupport {
 	}
 	return isupport
 }
+
+var casemapRFC1459, casemapStrictRFC1459, casemapASCII *strings.Replacer
+var casemapNoop = StringReplacer(func(s string) string {
+	return s
+})
+
+func init() {
+	oldnew := make([]string, 0, 26*2+4*2)
+	for i := 'A'; i <= 'Z'; i++ {
+		oldnew = append(oldnew, string(i), string(i+32))
+	}
+	casemapASCII = strings.NewReplacer(oldnew...)
+	oldnew = append(oldnew,
+		"[", "{",
+		"]", "}",
+		`\`, "|",
+	)
+	casemapStrictRFC1459 = strings.NewReplacer(oldnew...)
+	oldnew = append(oldnew, "~", "^")
+	casemapRFC1459 = strings.NewReplacer(oldnew...)
+}
+
+func parseCasemap(name string) StringReplacer {
+	switch strings.ToLower(name) {
+	case "rfc1459":
+		return casemapRFC1459.Replace
+	case "strict-rfc1459", "rfc1459-strict":
+		return casemapStrictRFC1459.Replace
+	case "ascii":
+		return casemapASCII.Replace
+	case "unicode":
+		return strings.ToLower
+	default:
+		return casemapNoop
+	}
+}
+
+type StringReplacer func(string) string

@@ -8,7 +8,7 @@ require (
 	github.com/ergochat/irc-go v0.5.0-rc2
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.34.0
-	go.mau.fi/util v0.9.2
+	go.mau.fi/util v0.9.3-0.20251108093324-79ce8674a432
 	gopkg.in/yaml.v3 v3.0.1
 	maunium.net/go/mautrix v0.25.3-0.20251107133300-bade596e495e
 )

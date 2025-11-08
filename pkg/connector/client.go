@@ -48,6 +48,8 @@ type IRCClient struct {
 
 	sendWaiters     map[string]sendWaiter
 	sendWaitersLock sync.Mutex
+
+	casemappedNames *exsync.Map[string, string]
 }
 
 var _ bridgev2.NetworkAPI = (*IRCClient)(nil)
@@ -81,15 +83,16 @@ func (ic *IRCConnector) LoadUserLogin(ctx context.Context, login *bridgev2.UserL
 		conn.UseSASL = true
 	}
 	iclient := &IRCClient{
-		Main:          ic,
-		Conn:          conn,
-		UserLogin:     login,
-		NetMeta:       serverConfig,
-		stopping:      make(chan struct{}),
-		stopped:       exsync.NewEvent(),
-		isupport:      defaultISupport,
-		chatInfoCache: make(map[string]*ChatInfoCache),
-		sendWaiters:   make(map[string]sendWaiter),
+		Main:            ic,
+		Conn:            conn,
+		UserLogin:       login,
+		NetMeta:         serverConfig,
+		stopping:        make(chan struct{}),
+		stopped:         exsync.NewEvent(),
+		isupport:        defaultISupport,
+		chatInfoCache:   make(map[string]*ChatInfoCache),
+		sendWaiters:     make(map[string]sendWaiter),
+		casemappedNames: exsync.NewMap[string, string](),
 	}
 	login.Client = iclient
 	conn.AddConnectCallback(iclient.onConnect)

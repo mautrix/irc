@@ -1,3 +1,7 @@
+# The networks that this bridge can connect to.
+# The key in this map is used in the `login` command, user IDs and other such places.
+# The key must consist of lowercase letters, numbers and dashes only.
+# Underscores, uppercase letters and other special characters are not allowed.
 networks:
     libera:
         displayname: Libera.Chat
@@ -12,5 +16,10 @@ networks:
     ircnet:
         displayname: IRCnet
         address: irc.swepipe.net:6697
+        tls: true
+        ctcp: false
+    ergo:
+        displayname: Ergo.Chat
+        address: irc.ergo.chat:6697
         tls: true
         ctcp: false

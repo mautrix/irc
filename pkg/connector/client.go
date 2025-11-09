@@ -37,7 +37,7 @@ type IRCClient struct {
 	Conn      *ircevent.Connection
 	NetMeta   *NetworkConfig
 
-	stopping chan struct{}
+	stopping *exsync.Event
 	stopOnce sync.Once
 	stopped  *exsync.Event
 
@@ -87,7 +87,7 @@ func (ic *IRCConnector) LoadUserLogin(ctx context.Context, login *bridgev2.UserL
 		Conn:            conn,
 		UserLogin:       login,
 		NetMeta:         serverConfig,
-		stopping:        make(chan struct{}),
+		stopping:        exsync.NewEvent(),
 		stopped:         exsync.NewEvent(),
 		isupport:        defaultISupport,
 		chatInfoCache:   make(map[string]*ChatInfoCache),
@@ -139,6 +139,9 @@ func (ic *IRCClient) connectLoop(ctx context.Context) {
 	connectFailures := 0
 	for {
 		err := ic.Conn.Connect()
+		if ic.stopping.IsSet() {
+			return
+		}
 		if errors.Is(err, ircevent.ClientHasQuit) {
 			ic.UserLogin.Log.Debug().Err(err).Msg("Exiting connection loop")
 			return
@@ -162,7 +165,9 @@ func (ic *IRCClient) connectLoop(ctx context.Context) {
 			connectFailures = 0
 		}
 		ic.Conn.DangerousInternalWaitForStop()
-		if connectFailures == 0 {
+		if ic.stopping.IsSet() {
+			return
+		} else if connectFailures == 0 {
 			err = ic.Conn.InternalGetError()
 			if err != nil {
 				ic.UserLogin.Log.Err(err).Msg("Error in connection")
@@ -176,7 +181,7 @@ func (ic *IRCClient) connectLoop(ctx context.Context) {
 		}
 		reconnectTime := time.Duration(2*connectFailures) * time.Second
 		select {
-		case <-ic.stopping:
+		case <-ic.stopping.GetChan():
 			return
 		case <-ctx.Done():
 			return
@@ -187,7 +192,7 @@ func (ic *IRCClient) connectLoop(ctx context.Context) {
 
 func (ic *IRCClient) Disconnect() {
 	ic.stopOnce.Do(func() {
-		close(ic.stopping)
+		ic.stopping.Set()
 		ic.Conn.Quit()
 	})
 	if !ic.stopped.WaitTimeout(4 * time.Second) {

@@ -244,7 +244,20 @@ func (ic *IRCClient) onMessage(msg ircmsg.Message) {
 		_, msgID := msg.GetTag("msgid")
 		_, reply := msg.GetTag("+draft/reply")
 		_, reaction := msg.GetTag("+draft/react")
-		if reply != "" && reaction != "" {
+		_, typing := msg.GetTag("+typing")
+		if typing != "" {
+			meta.Type = bridgev2.RemoteEventTyping
+			var timeout time.Duration
+			switch typing {
+			case "active":
+				timeout = 6 * time.Second
+			}
+			ic.UserLogin.QueueRemoteEvent(&simplevent.Typing{
+				EventMeta: meta,
+				Timeout:   timeout,
+				Type:      bridgev2.TypingTypeText,
+			})
+		} else if reply != "" && reaction != "" {
 			meta.Type = bridgev2.RemoteEventReaction
 			ic.UserLogin.QueueRemoteEvent(&simplevent.Reaction{
 				EventMeta:     meta,

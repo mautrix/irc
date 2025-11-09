@@ -32,6 +32,7 @@ import (
 var (
 	_ bridgev2.ReactionHandlingNetworkAPI  = (*IRCClient)(nil)
 	_ bridgev2.RedactionHandlingNetworkAPI = (*IRCClient)(nil)
+	_ bridgev2.TypingHandlingNetworkAPI    = (*IRCClient)(nil)
 )
 
 type sendWaiter struct {
@@ -209,4 +210,24 @@ func (ic *IRCClient) HandleMatrixMessageRemove(ctx context.Context, msg *bridgev
 		return err
 	}
 	return nil
+}
+
+func (ic *IRCClient) HandleMatrixTyping(ctx context.Context, msg *bridgev2.MatrixTyping) error {
+	channel, err := ic.parsePortalID(msg.Portal.ID)
+	if err != nil {
+		return err
+	}
+	_, canTag := ic.Conn.AcknowledgedCaps()["message-tags"]
+	if !canTag {
+		return nil
+	}
+	typingState := "active"
+	if !msg.IsTyping {
+		typingState = "done"
+	}
+	wrapped := ircmsg.MakeMessage(map[string]string{
+		"+typing": typingState,
+	}, "", "TAGMSG", channel)
+	_, err = ic.sendAndWait(ctx, channel, wrapped, "")
+	return err
 }

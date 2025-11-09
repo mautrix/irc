@@ -4,10 +4,11 @@
     * [x] Plain text
     * [ ] Formatted messages
     * [x] Media/files (as links)
-  * [x] Replies with [`+draft/reply`](https://ircv3.net/specs/client-tags/reply.html)
-  * [x] Reactions with [`+draft/react`](https://ircv3.net/specs/client-tags/reaction.html)
-  * [x] Redactions with [`draft/message-redaction`](https://ircv3.net/specs/extensions/message-redaction)
+  * [x] Replies ([`+draft/reply`](https://ircv3.net/specs/client-tags/reply.html))
   * [ ] Optional plaintext fallback for replies
+  * [x] Reactions ([`+draft/react`](https://ircv3.net/specs/client-tags/reaction.html))
+  * [x] Redactions ([`draft/message-redaction`](https://ircv3.net/specs/extensions/message-redaction))
+  * [x] Typing notifications ([`typing`](https://ircv3.net/specs/client-tags/typing))
   * [ ] Room metadata changes
     * [ ] Name
     * [ ] Topic
@@ -15,9 +16,10 @@
   * [ ] Message content
     * [x] Plain text
     * [ ] Formatted messages
-  * [x] Replies with [`+draft/reply`](https://ircv3.net/specs/client-tags/reply.html)
-  * [x] Reactions with [`+draft/react`](https://ircv3.net/specs/client-tags/reaction.html)
-  * [x] Redactions with [`draft/message-redaction`](https://ircv3.net/specs/extensions/message-redaction)
+  * [x] Replies ([`+draft/reply`](https://ircv3.net/specs/client-tags/reply.html))
+  * [x] Reactions ([`+draft/react`](https://ircv3.net/specs/client-tags/reaction.html))
+  * [x] Redactions ([`draft/message-redaction`](https://ircv3.net/specs/extensions/message-redaction))
+  * [x] Typing notifications ([`typing`](https://ircv3.net/specs/client-tags/typing))
   * [ ] Channel metadata changes
   * [x] Initial channel metadata
   * [x] User nick changes

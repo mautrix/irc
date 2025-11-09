@@ -8,8 +8,8 @@ charset = utf-8
 trim_trailing_whitespace = true
 insert_final_newline = true
 
-[*.{yaml,yml,sql}]
+[*.{yaml,yml,sql,md}]
 indent_style = space
 
-[.gitlab-ci.yml]
+[{.gitlab-ci.yml,*.md}]
 indent_size = 2

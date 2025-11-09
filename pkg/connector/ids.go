@@ -34,7 +34,7 @@ func makeUserLoginID(netName string, userMXID id.UserID) networkid.UserLoginID {
 }
 
 func makeMessageID(netName string, msg *ircmsg.Message) networkid.MessageID {
-	ok, msgID := msg.GetTag("message-id")
+	ok, msgID := msg.GetTag("msgid")
 	if ok {
 		return networkid.MessageID(fmt.Sprintf("%s:id:%s", netName, msgID))
 	}

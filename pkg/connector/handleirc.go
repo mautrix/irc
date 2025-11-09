@@ -258,7 +258,7 @@ func (ic *IRCClient) convertMessage(
 }
 
 func (ic *IRCClient) onUsers(message ircmsg.Message) {
-	if message.Params[1] != "@" {
+	if message.Params[1] != "@" && message.Params[1] != "=" && message.Params[1] != "*" {
 		ic.UserLogin.Log.Debug().
 			Str("channel", message.Params[2]).
 			Msg("Ignoring users list")

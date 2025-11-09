@@ -44,8 +44,39 @@ func (ic *IRCConnector) GetCapabilities() *bridgev2.NetworkGeneralCapabilities {
 }
 
 var caps = &event.RoomFeatures{
-	ID:            "fi.mau.irc.capabilities.2025_11_05",
-	File:          nil,
+	ID: "fi.mau.irc.capabilities.2025_11_10",
+	File: map[event.CapabilityMsgType]*event.FileFeatures{
+		event.MsgImage: {
+			MimeTypes:        map[string]event.CapabilitySupportLevel{"*/*": event.CapLevelFullySupported},
+			Caption:          event.CapLevelFullySupported,
+			MaxCaptionLength: 400,
+		},
+		event.MsgAudio: {
+			MimeTypes:        map[string]event.CapabilitySupportLevel{"*/*": event.CapLevelFullySupported},
+			Caption:          event.CapLevelFullySupported,
+			MaxCaptionLength: 400,
+		},
+		event.MsgVideo: {
+			MimeTypes:        map[string]event.CapabilitySupportLevel{"*/*": event.CapLevelFullySupported},
+			Caption:          event.CapLevelFullySupported,
+			MaxCaptionLength: 400,
+		},
+		event.MsgFile: {
+			MimeTypes:        map[string]event.CapabilitySupportLevel{"*/*": event.CapLevelFullySupported},
+			Caption:          event.CapLevelFullySupported,
+			MaxCaptionLength: 400,
+		},
+		event.CapMsgVoice: {
+			MimeTypes:        map[string]event.CapabilitySupportLevel{"*/*": event.CapLevelFullySupported},
+			Caption:          event.CapLevelFullySupported,
+			MaxCaptionLength: 400,
+		},
+		event.CapMsgSticker: {
+			MimeTypes:        map[string]event.CapabilitySupportLevel{"*/*": event.CapLevelFullySupported},
+			Caption:          event.CapLevelFullySupported,
+			MaxCaptionLength: 400,
+		},
+	},
 	MaxTextLength: 500,
 }
 

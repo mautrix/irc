@@ -3,7 +3,7 @@
   * [ ] Message content
     * [x] Plain text
     * [ ] Formatted messages
-    * [ ] Media/files (as links)
+    * [x] Media/files (as links)
   * [ ] Room metadata changes
     * [ ] Name
     * [ ] Topic

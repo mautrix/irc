@@ -10,7 +10,7 @@ require (
 	github.com/rs/zerolog v1.34.0
 	go.mau.fi/util v0.9.3-0.20251108093324-79ce8674a432
 	gopkg.in/yaml.v3 v3.0.1
-	maunium.net/go/mautrix v0.25.3-0.20251107133300-bade596e495e
+	maunium.net/go/mautrix v0.25.3-0.20251109221140-aa53cbc52850
 )
 
 require (

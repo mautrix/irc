@@ -98,6 +98,7 @@ func (ic *IRCConnector) LoadUserLogin(ctx context.Context, login *bridgev2.UserL
 	conn.AddConnectCallback(iclient.onConnect)
 	conn.AddCallback("PRIVMSG", iclient.onMessage)
 	conn.AddCallback("NOTICE", iclient.onMessage)
+	conn.AddCallback("CTCP_ACTION", iclient.onMessage)
 	conn.AddCallback("NICK", iclient.onNick)
 	conn.AddCallback("JOIN", iclient.onJoinPart)
 	conn.AddCallback("PART", iclient.onJoinPart)

@@ -245,6 +245,8 @@ func (ic *IRCClient) convertMessage(
 	}
 	if data.Command == "NOTICE" {
 		content.MsgType = event.MsgNotice
+	} else if data.Command == "CTCP_ACTION" {
+		content.MsgType = event.MsgEmote
 	}
 	return &bridgev2.ConvertedMessage{
 		ReplyTo: nil, // TODO

@@ -40,6 +40,8 @@ func (ic *IRCClient) HandleMatrixMessage(ctx context.Context, msg *bridgev2.Matr
 	cmd := "PRIVMSG"
 	if msg.Content.MsgType == event.MsgNotice {
 		cmd = "NOTICE"
+	} else if msg.Content.MsgType == event.MsgEmote {
+		body = fmt.Sprintf("\x01ACTION %s\x01", body)
 	}
 	wrapped := ircmsg.MakeMessage(nil, "", cmd, channel, msg.Content.Body)
 	_, willEcho := ic.Conn.AcknowledgedCaps()["echo-message"]

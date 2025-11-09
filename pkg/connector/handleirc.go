@@ -25,6 +25,7 @@ import (
 
 	"github.com/rs/zerolog"
 	"go.mau.fi/util/ptr"
+	"go.mau.fi/util/variationselector"
 	"maunium.net/go/mautrix/bridgev2"
 	"maunium.net/go/mautrix/bridgev2/networkid"
 	"maunium.net/go/mautrix/bridgev2/simplevent"
@@ -203,6 +204,9 @@ func (ic *IRCClient) onMessage(msg ircmsg.Message) {
 	} else if senderNick == ic.Conn.CurrentNick() {
 		ic.sendWaitersLock.Lock()
 		waiter, ok := ic.sendWaiters[targetChannel]
+		if ok && msg.Command != waiter.cmd {
+			ok = false
+		}
 		if ok {
 			delete(ic.sendWaiters, targetChannel)
 		}
@@ -215,23 +219,51 @@ func (ic *IRCClient) onMessage(msg ircmsg.Message) {
 		targetChannel = senderNick
 	}
 	ic.UserLogin.Log.Trace().Any("evt", msg).Msg("Received message")
-	ic.UserLogin.QueueRemoteEvent(&simplevent.Message[*ircmsg.Message]{
-		EventMeta: simplevent.EventMeta{
-			Type: bridgev2.RemoteEventMessage,
-			LogContext: func(c zerolog.Context) zerolog.Context {
-				return c.
-					Str("source", msg.Source).
-					Str("channel", targetChannel)
-			},
-			PortalKey:    ic.makePortalKey(targetChannel),
-			Sender:       ic.makeEventSender(senderNick),
-			CreatePortal: true,
-			Timestamp:    getTimeTag(msg),
+	meta := simplevent.EventMeta{
+		Type: bridgev2.RemoteEventMessage,
+		LogContext: func(c zerolog.Context) zerolog.Context {
+			return c.
+				Str("source", msg.Source).
+				Str("channel", targetChannel)
 		},
-		Data:               &msg,
-		ID:                 makeMessageID(ic.NetMeta.Name, &msg),
-		ConvertMessageFunc: ic.convertMessage,
-	})
+		PortalKey:    ic.makePortalKey(targetChannel),
+		Sender:       ic.makeEventSender(senderNick),
+		CreatePortal: true,
+		Timestamp:    getTimeTag(msg),
+	}
+	switch msg.Command {
+	case "REDACT":
+		// TODO reaction redactions
+		meta.Type = bridgev2.RemoteEventMessageRemove
+		ic.UserLogin.QueueRemoteEvent(&simplevent.MessageRemove{
+			EventMeta:     meta,
+			TargetMessage: makeProperMessageID(ic.NetMeta.Name, msg.Params[1]),
+			//Reason:        msg.Params[2],
+		})
+	case "TAGMSG":
+		_, msgID := msg.GetTag("msgid")
+		_, reply := msg.GetTag("+draft/reply")
+		_, reaction := msg.GetTag("+draft/react")
+		if reply != "" && reaction != "" {
+			meta.Type = bridgev2.RemoteEventReaction
+			ic.UserLogin.QueueRemoteEvent(&simplevent.Reaction{
+				EventMeta:     meta,
+				TargetMessage: makeProperMessageID(ic.NetMeta.Name, reply),
+				EmojiID:       networkid.EmojiID(variationselector.Remove(reaction)),
+				Emoji:         reaction,
+				ReactionDBMeta: &ReactionMetadata{
+					MessageID: msgID,
+				},
+			})
+		}
+	default:
+		ic.UserLogin.QueueRemoteEvent(&simplevent.Message[*ircmsg.Message]{
+			EventMeta:          meta,
+			Data:               &msg,
+			ID:                 makeMessageID(ic.NetMeta.Name, &msg),
+			ConvertMessageFunc: ic.convertMessage,
+		})
+	}
 }
 
 func (ic *IRCClient) convertMessage(

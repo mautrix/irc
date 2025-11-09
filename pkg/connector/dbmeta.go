@@ -22,10 +22,12 @@ import (
 
 func (ic *IRCConnector) GetDBMetaTypes() database.MetaTypes {
 	return database.MetaTypes{
-		Portal:   nil,
-		Ghost:    nil,
-		Message:  nil,
-		Reaction: nil,
+		Portal:  nil,
+		Ghost:   nil,
+		Message: nil,
+		Reaction: func() any {
+			return &ReactionMetadata{}
+		},
 		UserLogin: func() any {
 			return &UserLoginMetadata{}
 		},
@@ -39,4 +41,8 @@ type UserLoginMetadata struct {
 	Password string   `json:"password"`
 	SASLUser string   `json:"sasl_user"`
 	Channels []string `json:"channels"`
+}
+
+type ReactionMetadata struct {
+	MessageID string `json:"message_id"`
 }

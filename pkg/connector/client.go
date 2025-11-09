@@ -69,7 +69,7 @@ func (ic *IRCConnector) LoadUserLogin(ctx context.Context, login *bridgev2.UserL
 		Nick:        meta.Nick,
 		User:        ident,
 		RealName:    meta.RealName,
-		RequestCaps: []string{"message-tags", "server-time", "echo-message", "chghost"},
+		RequestCaps: []string{"message-tags", "server-time", "echo-message", "chghost", "draft/message-redaction"},
 		QuitMessage: "Exiting the Matrix",
 		Version:     "mautrix-irc",
 		UseTLS:      serverConfig.TLS,
@@ -98,7 +98,9 @@ func (ic *IRCConnector) LoadUserLogin(ctx context.Context, login *bridgev2.UserL
 	conn.AddConnectCallback(iclient.onConnect)
 	conn.AddCallback("PRIVMSG", iclient.onMessage)
 	conn.AddCallback("NOTICE", iclient.onMessage)
+	conn.AddCallback("TAGMSG", iclient.onMessage)
 	conn.AddCallback("CTCP_ACTION", iclient.onMessage)
+	conn.AddCallback("REDACT", iclient.onMessage)
 	conn.AddCallback("NICK", iclient.onNick)
 	conn.AddCallback("JOIN", iclient.onJoinPart)
 	conn.AddCallback("PART", iclient.onJoinPart)

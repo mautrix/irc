@@ -75,6 +75,15 @@ func parsePortalID(portalID networkid.PortalID) (netName, channel string, err er
 	return parts[0], parts[1], nil
 }
 
+func (ic *IRCClient) parsePortalID(portalID networkid.PortalID) (channel string, err error) {
+	var netName string
+	netName, channel, err = parsePortalID(portalID)
+	if err == nil && netName != ic.NetMeta.Name {
+		err = fmt.Errorf("%w (netname mismatch %q != %q)", bridgev2.ErrResolveIdentifierTryNext, netName, ic.NetMeta.Name)
+	}
+	return
+}
+
 func (ic *IRCClient) isDM(channel string) bool {
 	return !strings.ContainsRune(ic.isupport.ChanTypes, rune(channel[0]))
 }

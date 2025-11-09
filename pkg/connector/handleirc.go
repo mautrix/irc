@@ -26,6 +26,7 @@ import (
 	"github.com/rs/zerolog"
 	"go.mau.fi/util/ptr"
 	"maunium.net/go/mautrix/bridgev2"
+	"maunium.net/go/mautrix/bridgev2/networkid"
 	"maunium.net/go/mautrix/bridgev2/simplevent"
 	"maunium.net/go/mautrix/bridgev2/status"
 	"maunium.net/go/mautrix/event"
@@ -248,8 +249,16 @@ func (ic *IRCClient) convertMessage(
 	} else if data.Command == "CTCP_ACTION" {
 		content.MsgType = event.MsgEmote
 	}
+	ok, replyToID := data.GetTag("+draft/reply")
+	var replyTo *networkid.MessageOptionalPartID
+	if ok {
+		replyTo = &networkid.MessageOptionalPartID{
+			MessageID: makeProperMessageID(ic.NetMeta.Name, replyToID),
+			PartID:    ptr.Ptr(networkid.PartID("")),
+		}
+	}
 	return &bridgev2.ConvertedMessage{
-		ReplyTo: nil, // TODO
+		ReplyTo: replyTo,
 		Parts: []*bridgev2.ConvertedMessagePart{{
 			Type:    event.EventMessage,
 			Content: content,

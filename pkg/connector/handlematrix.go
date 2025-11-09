@@ -66,7 +66,14 @@ func (ic *IRCClient) HandleMatrixMessage(ctx context.Context, msg *bridgev2.Matr
 	} else if msg.Content.MsgType == event.MsgEmote {
 		body = fmt.Sprintf("\x01ACTION %s\x01", body)
 	}
-	wrapped := ircmsg.MakeMessage(nil, "", cmd, channel, body)
+	tags := make(map[string]string)
+	if msg.ReplyTo != nil {
+		_, msgID := parseProperMessageID(msg.ReplyTo.ID)
+		if msgID != "" {
+			tags["+draft/reply"] = msgID
+		}
+	}
+	wrapped := ircmsg.MakeMessage(tags, "", cmd, channel, body)
 	_, willEcho := ic.Conn.AcknowledgedCaps()["echo-message"]
 	ch := make(chan *ircmsg.Message, 1)
 	if willEcho {

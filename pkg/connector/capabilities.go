@@ -77,6 +77,7 @@ var caps = &event.RoomFeatures{
 			MaxCaptionLength: 400,
 		},
 	},
+	Reply:         event.CapLevelPartialSupport,
 	MaxTextLength: 500,
 }
 

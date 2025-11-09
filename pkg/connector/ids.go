@@ -33,10 +33,14 @@ func makeUserLoginID(netName string, userMXID id.UserID) networkid.UserLoginID {
 	return networkid.UserLoginID(fmt.Sprintf("%s:%s", netName, userMXID))
 }
 
+func makeProperMessageID(netName string, id string) networkid.MessageID {
+	return networkid.MessageID(fmt.Sprintf("%s:id:%s", netName, id))
+}
+
 func makeMessageID(netName string, msg *ircmsg.Message) networkid.MessageID {
 	ok, msgID := msg.GetTag("msgid")
 	if ok {
-		return networkid.MessageID(fmt.Sprintf("%s:id:%s", netName, msgID))
+		return makeProperMessageID(netName, msgID)
 	}
 	ok, ts := msg.GetTag("time")
 	if ok {
@@ -45,6 +49,15 @@ func makeMessageID(netName string, msg *ircmsg.Message) networkid.MessageID {
 	hash := sha256.Sum256([]byte(msg.Params[1]))
 	approxTime := int(float64(time.Now().Unix()) / 60)
 	return networkid.MessageID(fmt.Sprintf("%s:hash:%s:%s:%d:%x", netName, msg.Params[0], msg.Source, approxTime, hash[:16]))
+}
+
+func parseProperMessageID(msgID networkid.MessageID) (netName, realID string) {
+	parts := strings.SplitN(string(msgID), ":", 3)
+	netName = parts[0]
+	if len(parts) == 3 && parts[1] == "id" {
+		realID = parts[2]
+	}
+	return
 }
 
 func (ic *IRCClient) makePortalID(channel string) networkid.PortalID {

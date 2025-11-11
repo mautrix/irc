@@ -19,6 +19,7 @@ package connector
 import (
 	"context"
 	"log"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -56,6 +57,8 @@ type IRCClient struct {
 	fallbackSendWaiter    atomic.Pointer[chan *ircmsg.Message]
 
 	casemappedNames *exsync.Map[string, string]
+
+	motdBuilder strings.Builder
 }
 
 var _ bridgev2.NetworkAPI = (*IRCClient)(nil)
@@ -108,6 +111,12 @@ func (ic *IRCConnector) LoadUserLogin(ctx context.Context, login *bridgev2.UserL
 	conn.AddDisconnectCallback(iclient.onDisconnect)
 	conn.AddBatchCallback(iclient.onBatch)
 	conn.AddGlobalCallback(iclient.onFallbackReply)
+	conn.AddCallback(ircevent.RPL_WELCOME, iclient.onWelcome)
+	conn.AddCallback(ircevent.RPL_YOURHOST, iclient.onWelcome)
+	conn.AddCallback(ircevent.RPL_CREATED, iclient.onWelcome)
+	conn.AddCallback(ircevent.RPL_MOTDSTART, iclient.onWelcome)
+	conn.AddCallback(ircevent.RPL_MOTD, iclient.onWelcome)
+	conn.AddCallback(ircevent.RPL_ENDOFMOTD, iclient.onWelcome)
 	conn.AddCallback("PRIVMSG", iclient.onMessage)
 	conn.AddCallback("NOTICE", iclient.onMessage)
 	conn.AddCallback("TAGMSG", iclient.onMessage)

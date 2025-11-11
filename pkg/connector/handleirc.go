@@ -33,6 +33,7 @@ import (
 	"maunium.net/go/mautrix/bridgev2/simplevent"
 	"maunium.net/go/mautrix/bridgev2/status"
 	"maunium.net/go/mautrix/event"
+	"maunium.net/go/mautrix/format"
 
 	"go.mau.fi/mautrix-irc/pkg/ircfmt"
 )
@@ -50,6 +51,42 @@ func (ic *IRCClient) onConnect(msg ircmsg.Message) {
 				Msg("Failed to auto-join channel")
 			break
 		}
+	}
+}
+
+func (ic *IRCClient) onWelcome(message ircmsg.Message) {
+	if message.Command == ircevent.RPL_WELCOME {
+		ic.motdBuilder.Reset()
+		//ic.motdBuilder.WriteString("<pre>")
+	}
+	ic.motdBuilder.WriteString(ircfmt.ParseASCII(strings.Join(message.Params[1:], " ")))
+	if message.Command == ircevent.RPL_ENDOFMOTD {
+		//ic.motdBuilder.WriteString("</pre>")
+		fmt.Println("Finished building motd")
+		log := ic.UserLogin.Log.With().Str("action", "end of motd").Logger()
+		ctx := log.WithContext(ic.Main.Bridge.BackgroundCtx)
+		mgmtRoom, err := ic.UserLogin.User.GetManagementRoom(ctx)
+		if err != nil {
+			log.Err(err).Msg("Failed to get management room")
+		}
+		motd := &event.MessageEventContent{
+			MsgType:       event.MsgNotice,
+			Body:          format.HTMLToText(ic.motdBuilder.String()),
+			Format:        event.FormatHTML,
+			FormattedBody: ic.motdBuilder.String(),
+			Mentions:      &event.Mentions{},
+		}
+		_, err = ic.Main.Bridge.Bot.SendMessage(ctx, mgmtRoom, event.EventMessage, &event.Content{
+			Parsed: motd,
+		}, &bridgev2.MatrixSendExtra{
+			Timestamp: getTimeTag(message),
+		})
+		if err != nil {
+			log.Err(err).Msg("Failed to send MOTD to management room")
+		}
+	} else {
+		//ic.motdBuilder.WriteByte('\n')
+		ic.motdBuilder.WriteString("<br>")
 	}
 }
 

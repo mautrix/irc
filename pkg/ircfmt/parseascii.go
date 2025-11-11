@@ -27,7 +27,7 @@ import (
 )
 
 func ASCIIToContent(text string) *event.MessageEventContent {
-	converted := ParseASCII(text)
+	converted := parseASCII(text, true)
 	if converted == "" || converted == event.TextToHTML(text) {
 		return &event.MessageEventContent{
 			MsgType: event.MsgText,
@@ -43,6 +43,10 @@ func ASCIIToContent(text string) *event.MessageEventContent {
 }
 
 func ParseASCII(text string) string {
+	return parseASCII(text, false)
+}
+
+func parseASCII(text string, noReturnWithoutFormatting bool) string {
 	var out strings.Builder
 	var tagStack exslices.Stack[atom.Atom]
 	var currentFg, currentBg string
@@ -118,7 +122,10 @@ func ParseASCII(text string) string {
 		}
 	}
 	if out.Len() == 0 {
-		return ""
+		if noReturnWithoutFormatting {
+			return ""
+		}
+		return event.TextToHTML(text)
 	}
 	out.WriteString(event.TextToHTML(text))
 	doReset()

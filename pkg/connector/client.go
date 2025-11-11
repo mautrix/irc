@@ -20,8 +20,10 @@ import (
 	"context"
 	"log"
 	"sync"
+	"sync/atomic"
 	"time"
 
+	"github.com/ergochat/irc-go/ircmsg"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"go.mau.fi/util/exsync"
@@ -48,6 +50,10 @@ type IRCClient struct {
 
 	sendWaiters     map[string]sendWaiter
 	sendWaitersLock sync.Mutex
+
+	fallbackSendLock      sync.Mutex
+	fallbackExpectedReply atomic.Pointer[string]
+	fallbackSendWaiter    atomic.Pointer[chan *ircmsg.Message]
 
 	casemappedNames *exsync.Map[string, string]
 }
@@ -101,6 +107,7 @@ func (ic *IRCConnector) LoadUserLogin(ctx context.Context, login *bridgev2.UserL
 	conn.AddConnectCallback(iclient.onConnect)
 	conn.AddDisconnectCallback(iclient.onDisconnect)
 	conn.AddBatchCallback(iclient.onBatch)
+	conn.AddGlobalCallback(iclient.onFallbackReply)
 	conn.AddCallback("PRIVMSG", iclient.onMessage)
 	conn.AddCallback("NOTICE", iclient.onMessage)
 	conn.AddCallback("TAGMSG", iclient.onMessage)

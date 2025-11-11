@@ -112,7 +112,8 @@ func (ic *IRCConnector) LoadUserLogin(ctx context.Context, login *bridgev2.UserL
 	conn.AddCallback("QUIT", iclient.onQuit)
 	conn.AddCallback(ircevent.RPL_NAMREPLY, iclient.onUsers)
 	conn.AddCallback(ircevent.RPL_ENDOFNAMES, iclient.onUsersEnd)
-	conn.AddCallback(ircevent.RPL_TOPIC, iclient.onTopic)
+	conn.AddCallback("TOPIC", iclient.onNewTopic)
+	conn.AddCallback(ircevent.RPL_TOPIC, iclient.onOldTopic)
 	conn.AddCallback(ircevent.RPL_TOPICTIME, iclient.onTopicTime)
 	iclient.stopped.Set()
 	return nil

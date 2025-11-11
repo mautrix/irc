@@ -371,13 +371,36 @@ func (ic *IRCClient) onUsersEnd(message ircmsg.Message) {
 			CreatePortal: true,
 			Timestamp:    getTimeTag(message),
 		},
+		GetChatInfoFunc: ic.GetChatInfo,
 	})
 }
 
-func (ic *IRCClient) onTopic(message ircmsg.Message) {
+func (ic *IRCClient) onOldTopic(message ircmsg.Message) {
 	ic.chatInfoCacheLock.Lock()
 	defer ic.chatInfoCacheLock.Unlock()
 	ic.unlockedGetOrCreateChatInfo(message.Params[1]).Topic = message.Params[2]
+}
+
+func (ic *IRCClient) onNewTopic(message ircmsg.Message) {
+	ic.chatInfoCacheLock.Lock()
+	ic.unlockedGetOrCreateChatInfo(message.Params[0]).Topic = message.Params[1]
+	ic.chatInfoCacheLock.Unlock()
+	ic.UserLogin.QueueRemoteEvent(&simplevent.ChatInfoChange{
+		EventMeta: simplevent.EventMeta{
+			Type: bridgev2.RemoteEventChatInfoChange,
+			LogContext: func(c zerolog.Context) zerolog.Context {
+				return c.Str("source", message.Source).Str("action", "topic")
+			},
+			PortalKey:    ic.makePortalKey(message.Params[0]),
+			CreatePortal: false,
+			Timestamp:    getTimeTag(message),
+		},
+		ChatInfoChange: &bridgev2.ChatInfoChange{
+			ChatInfo: &bridgev2.ChatInfo{
+				Topic: ptr.Ptr(message.Params[1]),
+			},
+		},
+	})
 }
 
 func (ic *IRCClient) onTopicTime(message ircmsg.Message) {

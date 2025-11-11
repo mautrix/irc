@@ -27,6 +27,8 @@
   * [x] Typing notifications ([`typing`](https://ircv3.net/specs/client-tags/typing))
   * [ ] Backfilling messages ([`chathistory`](https://ircv3.net/specs/batches/chathistory))
   * [ ] Channel metadata changes
+    * [ ] Name
+    * [x] Topic
   * [x] Initial channel metadata
   * [x] User nick changes
 * Misc

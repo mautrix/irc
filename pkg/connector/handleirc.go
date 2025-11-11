@@ -164,6 +164,9 @@ func (ic *IRCClient) onQuit(msg ircmsg.Message) {
 	ic.chatInfoCacheLock.Lock()
 	defer ic.chatInfoCacheLock.Unlock()
 	nick := msg.Nick()
+	if nick == ic.Conn.CurrentNick() || ic.Main.Bridge.IsStopping() {
+		return
+	}
 	reason := msg.Params[0]
 	if !strings.HasPrefix(strings.ToLower(reason), "quit") {
 		reason = "Quit: " + reason

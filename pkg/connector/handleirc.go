@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ergochat/irc-go/ircevent"
 	"github.com/ergochat/irc-go/ircmsg"
 	"github.com/rs/zerolog"
 	"go.mau.fi/util/ptr"
@@ -50,6 +51,24 @@ func (ic *IRCClient) onConnect(msg ircmsg.Message) {
 			break
 		}
 	}
+}
+
+func (ic *IRCClient) onBatch(batch *ircevent.Batch) bool {
+	switch batch.Params[1] {
+	case "draft/multiline":
+		batch.Command = batch.Items[0].Command
+		var buf strings.Builder
+		for i, cmd := range batch.Items {
+			if !cmd.HasTag("draft/multiline-concat") && i != 0 {
+				buf.WriteByte('\n')
+			}
+			buf.WriteString(cmd.Params[1])
+		}
+		batch.Params = []string{batch.Items[0].Params[0], buf.String()}
+		ic.onMessage(batch.Message)
+		return true
+	}
+	return false
 }
 
 func (ic *IRCClient) onNick(msg ircmsg.Message) {

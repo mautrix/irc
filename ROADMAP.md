@@ -18,7 +18,7 @@
   * [ ] Message content
     * [x] Plain text
     * [x] Formatted messages
-    * [ ] Multiline messages ([`draft/multiline-messages`](https://ircv3.net/specs/extensions/multiline))
+    * [x] Multiline messages ([`draft/multiline-messages`](https://ircv3.net/specs/extensions/multiline))
   * [x] Server time ([`server-time`](https://ircv3.net/specs/extensions/server-time))
   * [x] Message IDs ([`message-ids`](https://ircv3.net/specs/extensions/message-ids))
   * [x] Replies ([`+draft/reply`](https://ircv3.net/specs/client-tags/reply.html))

@@ -65,11 +65,14 @@ func (ic *IRCConnector) LoadUserLogin(ctx context.Context, login *bridgev2.UserL
 		return err
 	}
 	conn := &ircevent.Connection{
-		Server:      serverConfig.Address,
-		Nick:        meta.Nick,
-		User:        ident,
-		RealName:    meta.RealName,
-		RequestCaps: []string{"message-tags", "server-time", "echo-message", "chghost", "draft/message-redaction"},
+		Server:   serverConfig.Address,
+		Nick:     meta.Nick,
+		User:     ident,
+		RealName: meta.RealName,
+		RequestCaps: []string{
+			"message-tags", "server-time", "echo-message", "chghost", "draft/message-redaction",
+			"batch", "draft/multiline",
+		},
 		QuitMessage: "Exiting the Matrix",
 		Version:     "mautrix-irc",
 		UseTLS:      serverConfig.TLS,
@@ -96,6 +99,7 @@ func (ic *IRCConnector) LoadUserLogin(ctx context.Context, login *bridgev2.UserL
 	}
 	login.Client = iclient
 	conn.AddConnectCallback(iclient.onConnect)
+	conn.AddBatchCallback(iclient.onBatch)
 	conn.AddCallback("PRIVMSG", iclient.onMessage)
 	conn.AddCallback("NOTICE", iclient.onMessage)
 	conn.AddCallback("TAGMSG", iclient.onMessage)

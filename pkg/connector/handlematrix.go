@@ -27,6 +27,8 @@ import (
 	"maunium.net/go/mautrix/bridgev2/database"
 	"maunium.net/go/mautrix/bridgev2/networkid"
 	"maunium.net/go/mautrix/event"
+
+	"go.mau.fi/mautrix-irc/pkg/ircfmt"
 )
 
 var (
@@ -49,11 +51,8 @@ func (ic *IRCClient) HandleMatrixMessage(ctx context.Context, msg *bridgev2.Matr
 	if err != nil {
 		return nil, err
 	}
-	body := msg.Content.Body
+	body := ircfmt.ContentToASCII(ctx, msg.Content)
 	if msg.Content.MsgType.IsMedia() {
-		if body == msg.Content.GetFileName() {
-			body = ""
-		}
 		pm, ok := ic.Main.Bridge.Matrix.(bridgev2.MatrixConnectorWithPublicMedia)
 		if !ok {
 			return nil, ErrNoPublicMedia

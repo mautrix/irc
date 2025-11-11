@@ -2,7 +2,7 @@
 * Matrix → IRC
   * [ ] Message content
     * [x] Plain text
-    * [ ] Formatted messages
+    * [x] Formatted messages
     * [x] Media/files (as links)
     * [ ] Multiline messages ([`draft/multiline-messages`](https://ircv3.net/specs/extensions/multiline))
     * [ ] Splitting fallback for multiline messages
@@ -17,7 +17,7 @@
 * IRC → Matrix
   * [ ] Message content
     * [x] Plain text
-    * [ ] Formatted messages
+    * [x] Formatted messages
     * [ ] Multiline messages ([`draft/multiline-messages`](https://ircv3.net/specs/extensions/multiline))
   * [x] Server time ([`server-time`](https://ircv3.net/specs/extensions/server-time))
   * [x] Message IDs ([`message-ids`](https://ircv3.net/specs/extensions/message-ids))

@@ -8,7 +8,8 @@ require (
 	github.com/ergochat/irc-go v0.5.0-rc2
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.34.0
-	go.mau.fi/util v0.9.3-0.20251110233221-bf2f50c4db5a
+	go.mau.fi/util v0.9.3-0.20251111211101-b5236c576e7b
+	golang.org/x/net v0.46.0
 	gopkg.in/yaml.v3 v3.0.1
 	maunium.net/go/mautrix v0.25.3-0.20251110233227-19ed3ac40b85
 )
@@ -32,7 +33,6 @@ require (
 	go.mau.fi/zeroconfig v0.2.0 // indirect
 	golang.org/x/crypto v0.43.0 // indirect
 	golang.org/x/exp v0.0.0-20251009144603-d2f985daa21b // indirect
-	golang.org/x/net v0.46.0 // indirect
 	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/sys v0.37.0 // indirect
 	golang.org/x/text v0.30.0 // indirect

@@ -48,8 +48,8 @@ github.com/tulir/irc-go v0.0.0-20251106085832-f79a451839f5 h1:I/AGLVYg1MLQB2vryk
 github.com/tulir/irc-go v0.0.0-20251106085832-f79a451839f5/go.mod h1:2vi7KNpIPWnReB5hmLpl92eMywQvuIeIIGdt/FQCph0=
 github.com/yuin/goldmark v1.7.13 h1:GPddIs617DnBLFFVJFgpo1aBfe/4xcvMc3SB5t/D0pA=
 github.com/yuin/goldmark v1.7.13/go.mod h1:ip/1k0VRfGynBgxOz0yCqHrbZXhcjxyuS66Brc7iBKg=
-go.mau.fi/util v0.9.3-0.20251110233221-bf2f50c4db5a h1:v999chJWqh8A7Ur+TCcOEFm9ruGaiP2ObJAdbDEfEGE=
-go.mau.fi/util v0.9.3-0.20251110233221-bf2f50c4db5a/go.mod h1:055elBBCJSdhRsmub7ci9hXZPgGr1U6dYg44cSgRgoU=
+go.mau.fi/util v0.9.3-0.20251111211101-b5236c576e7b h1:wPbb2eU7BvVCCvfySEU/hHoJHoFE59WgBFGF8w44tqo=
+go.mau.fi/util v0.9.3-0.20251111211101-b5236c576e7b/go.mod h1:055elBBCJSdhRsmub7ci9hXZPgGr1U6dYg44cSgRgoU=
 go.mau.fi/zeroconfig v0.2.0 h1:e/OGEERqVRRKlgaro7E6bh8xXiKFSXB3eNNIud7FUjU=
 go.mau.fi/zeroconfig v0.2.0/go.mod h1:J0Vn0prHNOm493oZoQ84kq83ZaNCYZnq+noI1b1eN8w=
 golang.org/x/crypto v0.43.0 h1:dduJYIi3A3KOfdGOHX8AVZ/jGiyPa3IbBozJ5kNuE04=

@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ergochat/irc-go/ircmsg"
 	"github.com/rs/zerolog"
 	"go.mau.fi/util/ptr"
 	"go.mau.fi/util/variationselector"
@@ -32,7 +33,7 @@ import (
 	"maunium.net/go/mautrix/bridgev2/status"
 	"maunium.net/go/mautrix/event"
 
-	"github.com/ergochat/irc-go/ircmsg"
+	"go.mau.fi/mautrix-irc/pkg/ircfmt"
 )
 
 func (ic *IRCClient) onConnect(msg ircmsg.Message) {
@@ -285,10 +286,7 @@ func (ic *IRCClient) convertMessage(
 	intent bridgev2.MatrixAPI,
 	data *ircmsg.Message,
 ) (*bridgev2.ConvertedMessage, error) {
-	content := &event.MessageEventContent{
-		MsgType: event.MsgText,
-		Body:    data.Params[1],
-	}
+	content := ircfmt.ASCIIToContent(data.Params[1])
 	if data.Command == "NOTICE" {
 		content.MsgType = event.MsgNotice
 	} else if data.Command == "CTCP_ACTION" {

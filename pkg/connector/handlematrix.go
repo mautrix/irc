@@ -35,6 +35,7 @@ var (
 	_ bridgev2.ReactionHandlingNetworkAPI  = (*IRCClient)(nil)
 	_ bridgev2.RedactionHandlingNetworkAPI = (*IRCClient)(nil)
 	_ bridgev2.TypingHandlingNetworkAPI    = (*IRCClient)(nil)
+	_ bridgev2.RoomTopicHandlingNetworkAPI = (*IRCClient)(nil)
 )
 
 type sendWaiter struct {
@@ -199,4 +200,22 @@ func (ic *IRCClient) HandleMatrixTyping(ctx context.Context, msg *bridgev2.Matri
 		"+typing": typingState,
 	}, "", "TAGMSG", channel)
 	return err
+}
+
+func (ic *IRCClient) HandleMatrixRoomTopic(ctx context.Context, msg *bridgev2.MatrixRoomTopic) (bool, error) {
+	channel, err := ic.parsePortalID(msg.Portal.ID)
+	if err != nil {
+		return false, err
+	}
+	resp, err := ic.sendAndWaitResponse(ctx, nil, "TOPIC", channel, msg.Content.Topic)
+	if err != nil {
+		return false, err
+	}
+	if resp.Command == "TOPIC" {
+		msg.Portal.Topic = resp.Params[1]
+		msg.Portal.TopicSet = msg.Content.Topic == resp.Params[1]
+	} else {
+		return false, fmt.Errorf("unexpected response: %s / %v", resp.Command, resp.Params[len(resp.Params)-1])
+	}
+	return true, nil
 }

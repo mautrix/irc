@@ -13,7 +13,7 @@
   * [x] Typing notifications ([`typing`](https://ircv3.net/specs/client-tags/typing))
   * [ ] Room metadata changes
     * [ ] Name
-    * [ ] Topic
+    * [x] Topic
 * IRC → Matrix
   * [ ] Message content
     * [x] Plain text

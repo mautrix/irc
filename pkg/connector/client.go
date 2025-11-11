@@ -71,7 +71,7 @@ func (ic *IRCConnector) LoadUserLogin(ctx context.Context, login *bridgev2.UserL
 		RealName: meta.RealName,
 		RequestCaps: []string{
 			"message-tags", "server-time", "echo-message", "chghost", "draft/message-redaction",
-			"batch", "draft/multiline",
+			"batch", "draft/multiline", "labeled-response",
 		},
 		QuitMessage: "Exiting the Matrix",
 		Version:     "mautrix-irc",
@@ -99,6 +99,7 @@ func (ic *IRCConnector) LoadUserLogin(ctx context.Context, login *bridgev2.UserL
 	}
 	login.Client = iclient
 	conn.AddConnectCallback(iclient.onConnect)
+	conn.AddDisconnectCallback(iclient.onDisconnect)
 	conn.AddBatchCallback(iclient.onBatch)
 	conn.AddCallback("PRIVMSG", iclient.onMessage)
 	conn.AddCallback("NOTICE", iclient.onMessage)

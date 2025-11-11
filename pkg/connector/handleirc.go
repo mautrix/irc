@@ -53,19 +53,23 @@ func (ic *IRCClient) onConnect(msg ircmsg.Message) {
 	}
 }
 
+func multilineBatchToMessage(batch *ircevent.Batch) *ircmsg.Message {
+	batch.Command = batch.Items[0].Command
+	var buf strings.Builder
+	for i, cmd := range batch.Items {
+		if !cmd.HasTag("draft/multiline-concat") && i != 0 {
+			buf.WriteByte('\n')
+		}
+		buf.WriteString(cmd.Params[1])
+	}
+	batch.Params = []string{batch.Items[0].Params[0], buf.String()}
+	return &batch.Message
+}
+
 func (ic *IRCClient) onBatch(batch *ircevent.Batch) bool {
 	switch batch.Params[1] {
 	case "draft/multiline":
-		batch.Command = batch.Items[0].Command
-		var buf strings.Builder
-		for i, cmd := range batch.Items {
-			if !cmd.HasTag("draft/multiline-concat") && i != 0 {
-				buf.WriteByte('\n')
-			}
-			buf.WriteString(cmd.Params[1])
-		}
-		batch.Params = []string{batch.Items[0].Params[0], buf.String()}
-		ic.onMessage(batch.Message)
+		ic.onMessage(*multilineBatchToMessage(batch))
 		return true
 	}
 	return false
@@ -216,25 +220,14 @@ func getTimeTag(msg ircmsg.Message) time.Time {
 }
 
 func (ic *IRCClient) onMessage(msg ircmsg.Message) {
+	if ic.onPotentialEchoMessage(msg) {
+		return
+	}
 	senderNick := msg.Nick()
 	targetChannel := msg.Params[0]
 	if senderNick == "" || strings.ContainsRune(senderNick, '.') || targetChannel == "*" {
 		// TODO maybe do something with these
 		return
-	} else if senderNick == ic.Conn.CurrentNick() {
-		ic.sendWaitersLock.Lock()
-		waiter, ok := ic.sendWaiters[targetChannel]
-		if ok && msg.Command != waiter.cmd {
-			ok = false
-		}
-		if ok {
-			delete(ic.sendWaiters, targetChannel)
-		}
-		ic.sendWaitersLock.Unlock()
-		if ok {
-			waiter.ch <- &msg
-			return
-		}
 	} else if ic.isDM(targetChannel) {
 		targetChannel = senderNick
 	}

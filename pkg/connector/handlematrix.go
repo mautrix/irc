@@ -82,8 +82,7 @@ func (ic *IRCClient) HandleMatrixMessage(ctx context.Context, msg *bridgev2.Matr
 			tags["+draft/reply"] = msgID
 		}
 	}
-	wrapped := ircmsg.MakeMessage(tags, "", cmd, channel, body)
-	resp, err := ic.sendAndWait(ctx, channel, wrapped, waiterCmd)
+	resp, err := ic.sendAndWaitMessage(ctx, tags, waiterCmd, cmd, channel, body)
 	if err != nil {
 		return nil, err
 	}
@@ -94,31 +93,6 @@ func (ic *IRCClient) HandleMatrixMessage(ctx context.Context, msg *bridgev2.Matr
 			Timestamp: getTimeTag(*resp),
 		},
 	}, nil
-}
-
-func (ic *IRCClient) sendAndWait(ctx context.Context, channel string, wrapped ircmsg.Message, waiterCmd string) (*ircmsg.Message, error) {
-	if waiterCmd == "" {
-		waiterCmd = wrapped.Command
-	}
-	_, willEcho := ic.Conn.AcknowledgedCaps()["echo-message"]
-	ch := make(chan *ircmsg.Message, 1)
-	if willEcho {
-		ic.sendWaitersLock.Lock()
-		ic.sendWaiters[channel] = sendWaiter{ch: ch, cmd: waiterCmd}
-		ic.sendWaitersLock.Unlock()
-	} else {
-		ch <- &wrapped
-	}
-	err := ic.Conn.SendIRCMessage(wrapped)
-	if err != nil {
-		return nil, err
-	}
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case resp := <-ch:
-		return resp, nil
-	}
 }
 
 func (ic *IRCClient) PreHandleMatrixReaction(ctx context.Context, msg *bridgev2.MatrixReaction) (bridgev2.MatrixReactionPreResponse, error) {
@@ -152,11 +126,10 @@ func (ic *IRCClient) HandleMatrixReaction(ctx context.Context, msg *bridgev2.Mat
 		return nil, fmt.Errorf("message doesn't have a proper ID")
 	}
 
-	wrapped := ircmsg.MakeMessage(map[string]string{
+	resp, err := ic.sendAndWaitMessage(ctx, map[string]string{
 		"+draft/reply": msgID,
 		"+draft/react": msg.Content.RelatesTo.Key,
 	}, "", "TAGMSG", channel, "")
-	resp, err := ic.sendAndWait(ctx, channel, wrapped, "")
 	if err != nil {
 		return nil, err
 	}
@@ -182,8 +155,7 @@ func (ic *IRCClient) HandleMatrixReactionRemove(ctx context.Context, msg *bridge
 	if msgID == "" {
 		return fmt.Errorf("no message ID stored in reaction metadata")
 	}
-	wrapped := ircmsg.MakeMessage(nil, "", "REDACT", channel, msgID)
-	_, err = ic.sendAndWait(ctx, channel, wrapped, "")
+	_, err = ic.sendAndWaitMessage(ctx, nil, "", "REDACT", channel, msgID)
 	if err != nil {
 		return err
 	}
@@ -203,8 +175,7 @@ func (ic *IRCClient) HandleMatrixMessageRemove(ctx context.Context, msg *bridgev
 	if msgID == "" {
 		return fmt.Errorf("message doesn't have a proper ID")
 	}
-	wrapped := ircmsg.MakeMessage(nil, "", "REDACT", channel, msgID, msg.Content.Reason)
-	_, err = ic.sendAndWait(ctx, channel, wrapped, "")
+	_, err = ic.sendAndWaitMessage(ctx, nil, "", "REDACT", channel, msgID, msg.Content.Reason)
 	if err != nil {
 		return err
 	}
@@ -224,9 +195,8 @@ func (ic *IRCClient) HandleMatrixTyping(ctx context.Context, msg *bridgev2.Matri
 	if !msg.IsTyping {
 		typingState = "done"
 	}
-	wrapped := ircmsg.MakeMessage(map[string]string{
+	_, err = ic.sendAndWaitMessage(ctx, map[string]string{
 		"+typing": typingState,
 	}, "", "TAGMSG", channel)
-	_, err = ic.sendAndWait(ctx, channel, wrapped, "")
 	return err
 }

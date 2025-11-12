@@ -17,6 +17,8 @@
 package connector
 
 import (
+	"bytes"
+	"encoding/json"
 	"slices"
 	"strings"
 
@@ -50,7 +52,7 @@ var cmdJoin = &commands.FullHandler{
 				return
 			}
 			var err error
-			_, netName, err = parsePortalID(ce.Portal.ID)
+			netName, _, err = parsePortalID(ce.Portal.ID)
 			if err != nil {
 				ce.Reply("Failed to parse portal ID: %s", err)
 				return
@@ -88,6 +90,71 @@ var cmdJoin = &commands.FullHandler{
 		Section:     commands.HelpSectionChats,
 		Description: "Join a channel and add it to your autojoin list",
 		Args:        "[network] <channel>",
+	},
+	RequiresLogin: true,
+}
+
+var cmdRaw = &commands.FullHandler{
+	Func: func(ce *commands.Event) {
+		if len(ce.Args) == 0 {
+			ce.Reply("Usage: $cmdprefix raw [network] [tags json] <command> [params...]")
+			return
+		}
+		var err error
+		var netName string
+		if ce.Bridge.Network.(*IRCConnector).networkExists(ce.Args[0]) {
+			netName = ce.Args[0]
+			ce.Args = ce.Args[1:]
+			ce.RawArgs = strings.TrimSpace(strings.TrimPrefix(ce.RawArgs, netName))
+		} else if ce.Portal != nil {
+			netName, _, err = parsePortalID(ce.Portal.ID)
+			if err != nil {
+				ce.Reply("Failed to parse portal ID: %s", err)
+				return
+			}
+		} else {
+			ce.Reply("The network argument is required when outside of a network room.")
+			return
+		}
+		login := ce.Bridge.GetCachedUserLoginByID(makeUserLoginID(netName, ce.User.MXID))
+		if login == nil {
+			ce.Reply("You are not logged into %s (active logins: %s)", format.SafeMarkdownCode(netName), getLogins(ce.User))
+			return
+		}
+		var tags map[string]string
+		if strings.HasPrefix(ce.Args[0], "{") {
+			buf := bytes.NewBufferString(ce.RawArgs)
+			err = json.NewDecoder(buf).Decode(&tags)
+			if err != nil {
+				ce.Reply("Failed to parse tags JSON: %s", err)
+				return
+			}
+			ce.Args = strings.Fields(strings.TrimSpace(buf.String()))
+		}
+		cmd := strings.ToUpper(ce.Args[0])
+		args := ce.Args[1:]
+		for i, arg := range args {
+			if strings.HasPrefix(arg, ":") {
+				args[i] = strings.Join(args[i:], " ")
+				args[i] = strings.TrimPrefix(args[i], ":")
+				args = args[:i+1]
+				break
+			}
+		}
+
+		resp, err := login.Client.(*IRCClient).SendRequest(ce.Ctx, tags, "", cmd, args...)
+		if err != nil {
+			ce.Reply("Failed to send command: %s", err)
+		} else {
+			line, _ := resp.Line()
+			ce.Reply("Got response: %s", format.SafeMarkdownCode(line))
+		}
+	},
+	Name: "raw",
+	Help: commands.HelpMeta{
+		Section:     commands.HelpSectionAdmin,
+		Description: "Send a raw IRC command",
+		Args:        "[network] [tags json] <command> [params...]",
 	},
 	RequiresLogin: true,
 }

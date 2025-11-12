@@ -87,6 +87,9 @@ func (ic *IRCClient) SendRequest(ctx context.Context, tags map[string]string, wa
 				}
 			}
 		}
+		if labelResp.Command != waiterCmd {
+			return nil, &IRCError{Msg: &labelResp.Message}
+		}
 		return &labelResp.Message, nil
 	}
 	wrapped := ircmsg.MakeMessage(tags, "", cmd, args...)

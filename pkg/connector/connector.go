@@ -48,7 +48,7 @@ func (ic *IRCConnector) Init(bridge *bridgev2.Bridge) {
 	ic.userLogins = make(map[netNickPair]*IRCClient)
 	ic.Bridge = bridge
 	ic.DB = ircdb.New(bridge.DB.Database, bridge.Log.With().Str("db_section", "irc").Logger())
-	bridge.Commands.(*commands.Processor).AddHandlers(cmdJoin)
+	bridge.Commands.(*commands.Processor).AddHandlers(cmdJoin, cmdRaw)
 }
 
 func (ic *IRCConnector) Start(ctx context.Context) error {

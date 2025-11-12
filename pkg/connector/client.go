@@ -18,6 +18,7 @@ package connector
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"strings"
 	"sync"
@@ -61,7 +62,7 @@ func (ic *IRCConnector) LoadUserLogin(ctx context.Context, login *bridgev2.UserL
 	meta := login.Metadata.(*UserLoginMetadata)
 	serverConfig, ok := ic.Config.Networks[meta.Server]
 	if !ok {
-		return nil
+		return fmt.Errorf("unknown network: %s", meta.Server)
 	}
 	ident, err := ic.DB.GetIdent(ctx, login.UserMXID)
 	if err != nil {

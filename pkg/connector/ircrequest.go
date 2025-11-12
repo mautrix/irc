@@ -62,21 +62,39 @@ func (ie *IRCError) Error() string {
 }
 
 func (ic *IRCClient) SendRequest(ctx context.Context, tags map[string]string, waiterCmd, cmd string, args ...string) (*ircmsg.Message, error) {
+	if waiterCmd == "" {
+		waiterCmd = cmd
+	}
 	channel := args[0]
 	labelResp, err := ic.Conn.GetLabeledResponse(tags, cmd, args...)
 	if err != nil && !errors.Is(err, ircevent.CapabilityNotNegotiated) {
 		return nil, err
 	} else if labelResp != nil {
-		if labelResp.Command == "BATCH" && isTextCommand(labelResp.Items[0].Command) {
-			return multilineBatchToMessage(labelResp), nil
+		if labelResp.Command == "BATCH" {
+			switch labelResp.Params[1] {
+			case "draft/multiline":
+				return multilineBatchToMessage(labelResp), nil
+			case "labeled-response":
+				firstPart := labelResp.Items[0]
+				// This is a hack for service DM responses among other things
+				// First item in the batch is the echo message, the rest are the response from the bot
+				if firstPart.Command == waiterCmd && firstPart.Nick() == ic.Conn.CurrentNick() &&
+					len(labelResp.Items) > 1 && labelResp.Items[1].Nick() != ic.Conn.CurrentNick() {
+					labelResp.Items = labelResp.Items[1:]
+					labelResp.Source = labelResp.Items[0].Source
+					ic.onMessage(*multilineBatchToMessage(labelResp))
+					return &firstPart.Message, nil
+				}
+			}
 		}
 		return &labelResp.Message, nil
 	}
-	if waiterCmd == "" {
-		waiterCmd = cmd
-	}
 	wrapped := ircmsg.MakeMessage(tags, "", cmd, args...)
 	_, willEcho := ic.Conn.AcknowledgedCaps()["echo-message"]
+	if cmd == "PRIVMSG" && (args[0] == "nickserv" || args[0] == "chanserv") {
+		// Some servers like libera are buggy and don't echo messages sent to services
+		willEcho = false
+	}
 	ch := make(chan *ircmsg.Message, 1)
 	var timeoutCh <-chan time.Time
 	if willEcho {
@@ -85,7 +103,7 @@ func (ic *IRCClient) SendRequest(ctx context.Context, tags map[string]string, wa
 		ic.sendWaitersLock.Unlock()
 		timeoutCh = time.After(15 * time.Second)
 	} else {
-		timeoutCh = time.After(3 * time.Second)
+		timeoutCh = time.After(1 * time.Second)
 	}
 	err = ic.Conn.SendIRCMessage(wrapped)
 	if err != nil {
@@ -107,15 +125,6 @@ func (ic *IRCClient) SendRequest(ctx context.Context, tags map[string]string, wa
 		}
 		// We're not waiting for an echo, which means the timeout is a success
 		return &wrapped, nil
-	}
-}
-
-func isTextCommand(cmd string) bool {
-	switch cmd {
-	case "PRIVMSG", "NOTICE", "TAGMSG", "CTCP_ACTION":
-		return true
-	default:
-		return false
 	}
 }
 

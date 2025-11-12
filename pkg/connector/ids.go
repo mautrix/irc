@@ -54,11 +54,11 @@ func makeMessageID(netName string, msg *ircmsg.Message) networkid.MessageID {
 	if ok {
 		return makeProperMessageID(netName, msgID)
 	}
+	hash := sha256.Sum256([]byte(msg.Params[1]))
 	ok, ts := msg.GetTag("time")
 	if ok {
-		return networkid.MessageID(fmt.Sprintf("%s:time:%s:%s:%s", netName, msg.Params[0], msg.Source, ts))
+		return networkid.MessageID(fmt.Sprintf("%s:time:%s:%s:%s:%x", netName, msg.Params[0], msg.Source, ts, hash[:16]))
 	}
-	hash := sha256.Sum256([]byte(msg.Params[1]))
 	approxTime := int(float64(time.Now().Unix()) / 60)
 	return networkid.MessageID(fmt.Sprintf("%s:hash:%s:%s:%d:%x", netName, msg.Params[0], msg.Source, approxTime, hash[:16]))
 }

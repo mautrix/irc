@@ -5,21 +5,28 @@
 networks:
     libera:
         displayname: Libera.Chat
+        avatar_url: mxc://maunium.net/iSsUZbYrLHvVBKuFxRoHDjio
+        external_url: https://libera.chat
         address: irc.libera.chat:6697
         tls: true
         ctcp: false
     oftc:
         displayname: OFTC
+        avatar_url: mxc://maunium.net/IdoxZYePBfKjDPRSUHbMtRCY
+        external_url: https://oftc.net
         address: irc.oftc.net:6697
         tls: true
         ctcp: false
     ircnet:
         displayname: IRCnet
+        external_url: https://www.ircnet.com/
         address: irc.swepipe.net:6697
         tls: true
         ctcp: false
     ergo:
         displayname: Ergo.Chat
+        avatar_url: mxc://maunium.net/WMLMMpftJmhmddgkxPfwfanF
+        external_url: https://ergo.chat
         address: irc.ergo.chat:6697
         tls: true
         ctcp: false

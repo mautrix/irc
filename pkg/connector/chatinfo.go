@@ -23,9 +23,11 @@ import (
 	"time"
 
 	"go.mau.fi/util/ptr"
+	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/bridgev2"
 	"maunium.net/go/mautrix/bridgev2/database"
 	"maunium.net/go/mautrix/bridgev2/networkid"
+	"maunium.net/go/mautrix/event"
 )
 
 type ChatInfoCache struct {
@@ -141,4 +143,39 @@ func (ic *IRCClient) GetUserInfo(ctx context.Context, ghost *bridgev2.Ghost) (*b
 		Identifiers: []string{fmt.Sprintf("irc%s://%s/%s", secure, ic.NetMeta.Address, nick)},
 		Name:        &realNick,
 	}, nil
+}
+
+var _ bridgev2.PortalBridgeInfoFillingNetwork = (*IRCConnector)(nil)
+var _ bridgev2.PersonalFilteringCustomizingNetworkAPI = (*IRCClient)(nil)
+
+func (ic *IRCConnector) FillPortalBridgeInfo(portal *bridgev2.Portal, content *event.BridgeEventContent) {
+	netName, channel, err := parsePortalID(portal.ID)
+	if err != nil {
+		return
+	}
+	netMeta, ok := ic.Config.Networks[netName]
+	if !ok {
+		return
+	}
+	var secure string
+	if netMeta.TLS {
+		secure = "s"
+	}
+	content.Channel.ExternalURL = fmt.Sprintf("irc%s://%s/%s", secure, netMeta.Address, channel)
+	content.Network = &event.BridgeInfoSection{
+		ID:          netName,
+		DisplayName: netMeta.DisplayName,
+		AvatarURL:   netMeta.AvatarURL,
+		ExternalURL: netMeta.ExternalURL,
+	}
+}
+
+func (ic *IRCClient) CustomizePersonalFilteringSpace(req *mautrix.ReqCreateRoom) {
+	req.Name = ic.NetMeta.DisplayName
+	req.Topic = fmt.Sprintf("Your %s bridged chats", req.Name)
+	for _, evt := range req.InitialState {
+		if evt.Type == event.StateRoomAvatar && ic.NetMeta.AvatarURL != "" {
+			evt.Content.Parsed.(*event.RoomAvatarEventContent).URL = ic.NetMeta.AvatarURL
+		}
+	}
 }

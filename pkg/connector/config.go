@@ -22,17 +22,20 @@ import (
 
 	up "go.mau.fi/util/configupgrade"
 	"gopkg.in/yaml.v3"
+	"maunium.net/go/mautrix/id"
 )
 
 //go:embed example-config.yaml
 var ExampleConfig string
 
 type NetworkConfig struct {
-	DisplayName string `yaml:"displayname"`
-	Address     string `yaml:"address"`
-	TLS         bool   `yaml:"tls"`
-	CTCP        bool   `yaml:"ctcp"`
-	Name        string `yaml:"-"`
+	DisplayName string              `yaml:"displayname"`
+	AvatarURL   id.ContentURIString `yaml:"avatar_url"`
+	ExternalURL string              `yaml:"external_url"`
+	Address     string              `yaml:"address"`
+	TLS         bool                `yaml:"tls"`
+	CTCP        bool                `yaml:"ctcp"`
+	Name        string              `yaml:"-"`
 }
 
 type Config struct {

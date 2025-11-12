@@ -83,7 +83,7 @@ func (ic *IRCClient) HandleMatrixMessage(ctx context.Context, msg *bridgev2.Matr
 			tags["+draft/reply"] = msgID
 		}
 	}
-	resp, err := ic.sendAndWaitMessage(ctx, tags, waiterCmd, cmd, channel, body)
+	resp, err := ic.SendRequest(ctx, tags, waiterCmd, cmd, channel, body)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +127,7 @@ func (ic *IRCClient) HandleMatrixReaction(ctx context.Context, msg *bridgev2.Mat
 		return nil, fmt.Errorf("message doesn't have a proper ID")
 	}
 
-	resp, err := ic.sendAndWaitMessage(ctx, map[string]string{
+	resp, err := ic.SendRequest(ctx, map[string]string{
 		"+draft/reply": msgID,
 		"+draft/react": msg.Content.RelatesTo.Key,
 	}, "", "TAGMSG", channel, "")
@@ -156,7 +156,7 @@ func (ic *IRCClient) HandleMatrixReactionRemove(ctx context.Context, msg *bridge
 	if msgID == "" {
 		return fmt.Errorf("no message ID stored in reaction metadata")
 	}
-	_, err = ic.sendAndWaitMessage(ctx, nil, "", "REDACT", channel, msgID)
+	_, err = ic.SendRequest(ctx, nil, "", "REDACT", channel, msgID)
 	if err != nil {
 		return err
 	}
@@ -176,7 +176,7 @@ func (ic *IRCClient) HandleMatrixMessageRemove(ctx context.Context, msg *bridgev
 	if msgID == "" {
 		return fmt.Errorf("message doesn't have a proper ID")
 	}
-	_, err = ic.sendAndWaitMessage(ctx, nil, "", "REDACT", channel, msgID, msg.Content.Reason)
+	_, err = ic.SendRequest(ctx, nil, "", "REDACT", channel, msgID, msg.Content.Reason)
 	if err != nil {
 		return err
 	}
@@ -196,7 +196,7 @@ func (ic *IRCClient) HandleMatrixTyping(ctx context.Context, msg *bridgev2.Matri
 	if !msg.IsTyping {
 		typingState = "done"
 	}
-	_, err = ic.sendAndWaitMessage(ctx, map[string]string{
+	_, err = ic.SendRequest(ctx, map[string]string{
 		"+typing": typingState,
 	}, "", "TAGMSG", channel)
 	return err
@@ -207,15 +207,11 @@ func (ic *IRCClient) HandleMatrixRoomTopic(ctx context.Context, msg *bridgev2.Ma
 	if err != nil {
 		return false, err
 	}
-	resp, err := ic.sendAndWaitMessage(ctx, nil, "", "TOPIC", channel, msg.Content.Topic)
+	resp, err := ic.SendRequest(ctx, nil, "", "TOPIC", channel, msg.Content.Topic)
 	if err != nil {
 		return false, err
 	}
-	if resp.Command == "TOPIC" {
-		msg.Portal.Topic = resp.Params[1]
-		msg.Portal.TopicSet = msg.Content.Topic == resp.Params[1]
-	} else {
-		return false, fmt.Errorf("unexpected response: %s / %v", resp.Command, resp.Params[len(resp.Params)-1])
-	}
+	msg.Portal.Topic = resp.Params[1]
+	msg.Portal.TopicSet = msg.Content.Topic == resp.Params[1]
 	return true, nil
 }

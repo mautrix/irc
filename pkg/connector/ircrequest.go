@@ -53,7 +53,15 @@ func (ic *IRCClient) onPotentialEchoMessage(msg ircmsg.Message) bool {
 	return false
 }
 
-func (ic *IRCClient) sendAndWaitMessage(ctx context.Context, tags map[string]string, waiterCmd, cmd string, args ...string) (*ircmsg.Message, error) {
+type IRCError struct {
+	Msg *ircmsg.Message
+}
+
+func (ie *IRCError) Error() string {
+	return fmt.Sprintf("%s: %s", ie.Msg.Command, ie.Msg.Params[len(ie.Msg.Params)-1])
+}
+
+func (ic *IRCClient) SendRequest(ctx context.Context, tags map[string]string, waiterCmd, cmd string, args ...string) (*ircmsg.Message, error) {
 	channel := args[0]
 	labelResp, err := ic.Conn.GetLabeledResponse(tags, cmd, args...)
 	if err != nil && !errors.Is(err, ircevent.CapabilityNotNegotiated) {
@@ -89,6 +97,8 @@ func (ic *IRCClient) sendAndWaitMessage(ctx context.Context, tags map[string]str
 	case resp := <-ch:
 		if resp == nil {
 			return nil, fmt.Errorf("no echo received")
+		} else if resp.Command != waiterCmd {
+			return nil, &IRCError{Msg: resp}
 		}
 		return resp, nil
 	case <-timeoutCh:
@@ -110,19 +120,25 @@ func isTextCommand(cmd string) bool {
 }
 
 func (ic *IRCClient) onFallbackReply(message ircmsg.Message) bool {
-	if len(message.Params) < 2 {
+	if len(message.Params) == 0 {
 		return false
 	}
 	ic.sendWaitersLock.Lock()
 	defer ic.sendWaitersLock.Unlock()
-	channel := message.Params[1]
-	waiter, ok := ic.sendWaiters[channel]
-	if !ok {
-		return false
-	}
 	isError := message.Params[0] == ic.Conn.CurrentNick() &&
 		len(message.Command) == 3 &&
 		(message.Command[0] == '4' || message.Command[0] == '5' || isNon45Error(message.Command))
+	channel := message.Params[min(1, len(message.Params)-1)]
+	waiter, ok := ic.sendWaiters[channel]
+	if !ok {
+		if !isError && len(message.Params) > 1 {
+			channel = message.Params[0]
+			waiter, ok = ic.sendWaiters[channel]
+		}
+		if !ok {
+			return false
+		}
+	}
 	if message.Command == waiter.cmd {
 		if message.Nick() != ic.Conn.CurrentNick() {
 			return false

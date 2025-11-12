@@ -27,7 +27,7 @@ type ISupport struct {
 	PLPrefixes  map[byte]int
 }
 
-var defaultISupport = ParseISupport(map[string]string{})
+var defaultISupport *ISupport
 
 func modeLetterToPowerLevel(letter byte) int {
 	switch letter {
@@ -93,6 +93,7 @@ func init() {
 	casemapStrictRFC1459 = strings.NewReplacer(oldnew...)
 	oldnew = append(oldnew, "~", "^")
 	casemapRFC1459 = strings.NewReplacer(oldnew...)
+	defaultISupport = ParseISupport(map[string]string{})
 }
 
 func parseCasemap(name string) StringReplacer {

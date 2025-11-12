@@ -101,6 +101,15 @@ func (ic *IRCConnector) LoadUserLogin(ctx context.Context, login *bridgev2.UserL
 		casemappedNames: exsync.NewMap[string, string](),
 	}
 	login.Client = iclient
+	conn.OnNickChange = func(oldNick, newNick string) {
+		if oldNick == "" {
+			oldNick = iclient.Conn.Nick
+		}
+		ic.addLoginToMap(iclient, oldNick, newNick)
+	}
+	// This is slightly dangerous, but hopefully the connection happens quickly and sets the correct nick
+	ic.addLoginToMap(iclient, "", conn.Nick)
+
 	conn.AddConnectCallback(iclient.onConnect)
 	conn.AddDisconnectCallback(iclient.onDisconnect)
 	conn.AddBatchCallback(iclient.onBatch)
@@ -164,6 +173,7 @@ func (ic *IRCClient) connectLoop(ctx context.Context) {
 			ic.UserLogin.Log.Debug().Err(err).Msg("Exiting connection loop")
 			return
 		} else if errors.Is(err, ircevent.SASLError) {
+			ic.Main.removeLoginFromMap(ic)
 			ic.UserLogin.Log.Debug().Err(err).Msg("SASL failed, exiting connection loop")
 			ic.UserLogin.BridgeState.Send(status.BridgeState{
 				StateEvent: status.StateBadCredentials,
@@ -209,6 +219,7 @@ func (ic *IRCClient) connectLoop(ctx context.Context) {
 }
 
 func (ic *IRCClient) Disconnect() {
+	ic.Main.removeLoginFromMap(ic)
 	ic.stopOnce.Do(func() {
 		ic.stopping.Set()
 		ic.Conn.Quit()

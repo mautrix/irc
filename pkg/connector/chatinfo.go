@@ -109,7 +109,6 @@ func (ic *IRCClient) getChannelInfo(channel string) *bridgev2.ChatInfo {
 		Topic: ptr.Ptr(realInfo.Topic),
 		Members: &bridgev2.ChatMemberList{
 			IsFull:                     realInfo.MembersComplete,
-			CheckAllLogins:             true,
 			ExcludeChangesFromTimeline: true,
 			TotalMemberCount:           len(realInfo.Members),
 			MemberMap:                  bridgev2.ChatMemberMap{},

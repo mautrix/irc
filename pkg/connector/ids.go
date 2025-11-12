@@ -166,8 +166,12 @@ func (ic *IRCClient) makeUserID(nick string) networkid.UserID {
 }
 
 func (ic *IRCClient) makeEventSender(nick string) bridgev2.EventSender {
-	return bridgev2.EventSender{
+	es := bridgev2.EventSender{
 		IsFromMe: nick == ic.Conn.CurrentNick(),
 		Sender:   ic.makeUserID(nick),
 	}
+	if !es.IsFromMe {
+		es.SenderLogin = ic.Main.getLoginByNick(ic.NetMeta.Name, ic.isupport.CaseMapping(nick))
+	}
+	return es
 }

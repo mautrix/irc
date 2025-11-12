@@ -19,22 +19,33 @@ package connector
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"maunium.net/go/mautrix/bridgev2"
 	"maunium.net/go/mautrix/bridgev2/commands"
+	"maunium.net/go/mautrix/bridgev2/networkid"
 
 	"go.mau.fi/mautrix-irc/pkg/connector/ircdb"
 )
+
+type netNickPair struct {
+	net  string
+	nick string
+}
 
 type IRCConnector struct {
 	Bridge *bridgev2.Bridge
 	Config Config
 	DB     *ircdb.IRCDB
+
+	userLogins     map[netNickPair]*IRCClient
+	userLoginsLock sync.RWMutex
 }
 
 var _ bridgev2.NetworkConnector = (*IRCConnector)(nil)
 
 func (ic *IRCConnector) Init(bridge *bridgev2.Bridge) {
+	ic.userLogins = make(map[netNickPair]*IRCClient)
 	ic.Bridge = bridge
 	ic.DB = ircdb.New(bridge.DB.Database, bridge.Log.With().Str("db_section", "irc").Logger())
 	bridge.Commands.(*commands.Processor).AddHandlers(cmdJoin)
@@ -62,4 +73,35 @@ func (ic *IRCConnector) GetName() bridgev2.BridgeName {
 		DefaultPort:          29343,
 		DefaultCommandPrefix: "!irc",
 	}
+}
+
+func (ic *IRCConnector) removeLoginFromMap(cli *IRCClient) {
+	nick := cli.Conn.CurrentNick()
+	if nick == "" {
+		nick = cli.Conn.Nick
+	}
+	ic.addLoginToMap(cli, nick, "")
+}
+
+func (ic *IRCConnector) addLoginToMap(cli *IRCClient, oldNick, newNick string) {
+	newNick = cli.isupport.CaseMapping(newNick)
+	oldNick = cli.isupport.CaseMapping(oldNick)
+	ic.userLoginsLock.Lock()
+	defer ic.userLoginsLock.Unlock()
+	if oldNick != "" && ic.userLogins[netNickPair{net: cli.NetMeta.Name, nick: oldNick}] == cli {
+		delete(ic.userLogins, netNickPair{net: cli.NetMeta.Name, nick: oldNick})
+	}
+	if newNick != "" {
+		ic.userLogins[netNickPair{net: cli.NetMeta.Name, nick: newNick}] = cli
+	}
+}
+
+func (ic *IRCConnector) getLoginByNick(net, nick string) networkid.UserLoginID {
+	ic.userLoginsLock.RLock()
+	defer ic.userLoginsLock.RUnlock()
+	cli, ok := ic.userLogins[netNickPair{net: net, nick: nick}]
+	if ok && cli.Conn != nil && cli.isupport.CaseMapping(cli.Conn.CurrentNick()) == nick {
+		return cli.UserLogin.ID
+	}
+	return ""
 }

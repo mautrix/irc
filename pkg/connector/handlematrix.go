@@ -207,7 +207,7 @@ func (ic *IRCClient) HandleMatrixRoomTopic(ctx context.Context, msg *bridgev2.Ma
 	if err != nil {
 		return false, err
 	}
-	resp, err := ic.sendAndWaitResponse(ctx, nil, "TOPIC", channel, msg.Content.Topic)
+	resp, err := ic.sendAndWaitMessage(ctx, nil, "", "TOPIC", channel, msg.Content.Topic)
 	if err != nil {
 		return false, err
 	}

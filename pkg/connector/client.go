@@ -21,10 +21,8 @@ import (
 	"log"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
-	"github.com/ergochat/irc-go/ircmsg"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"go.mau.fi/util/exsync"
@@ -51,10 +49,6 @@ type IRCClient struct {
 
 	sendWaiters     map[string]sendWaiter
 	sendWaitersLock sync.Mutex
-
-	fallbackSendLock      sync.Mutex
-	fallbackExpectedReply atomic.Pointer[string]
-	fallbackSendWaiter    atomic.Pointer[chan *ircmsg.Message]
 
 	casemappedNames *exsync.Map[string, string]
 

@@ -24,64 +24,7 @@ import (
 	"github.com/ergochat/irc-go/ircevent"
 	"github.com/ergochat/irc-go/ircmsg"
 	"github.com/pkg/errors"
-	"go.mau.fi/util/ptr"
 )
-
-func (ic *IRCClient) sendAndWaitResponse(ctx context.Context, tags map[string]string, cmd string, args ...string) (*ircevent.Batch, error) {
-	resp, err := ic.Conn.GetLabeledResponse(tags, cmd, args...)
-	if errors.Is(err, ircevent.CapabilityNotNegotiated) {
-		return ic.sendAndWaitResponseFallback(ctx, tags, cmd, args...)
-	}
-	return resp, err
-}
-
-func (ic *IRCClient) onFallbackReply(message ircmsg.Message) bool {
-	isProbablyError := len(message.Command) == 3 && (message.Command[0] == '4' || message.Command[0] == '5')
-	switch message.Command {
-	case ircevent.ERR_INVALIDMODEPARAM, ircevent.ERR_LISTMODEALREADYSET, ircevent.ERR_LISTMODENOTSET,
-		ircevent.ERR_NOPRIVS, ircevent.ERR_NICKLOCKED, ptr.Val(ic.fallbackExpectedReply.Load()):
-	default:
-		if !isProbablyError {
-			return false
-		}
-	}
-	ch := ic.fallbackSendWaiter.Swap(nil)
-	if ch == nil {
-		return false
-	}
-	ic.UserLogin.Log.Trace().
-		Any("cmd", message).
-		Msg("Treating command as response to fallback waiter")
-	*ch <- &message
-	return true
-}
-
-func (ic *IRCClient) sendAndWaitResponseFallback(ctx context.Context, tags map[string]string, cmd string, args ...string) (*ircevent.Batch, error) {
-	ic.fallbackSendLock.Lock()
-	defer ic.fallbackSendLock.Unlock()
-	ch := make(chan *ircmsg.Message, 1)
-	_, willEcho := ic.Conn.AcknowledgedCaps()["echo-message"]
-	var timeout <-chan time.Time
-	if willEcho {
-		ic.fallbackExpectedReply.Store(&cmd)
-	} else {
-		timeout = time.After(3 * time.Second)
-	}
-	ic.fallbackSendWaiter.Store(&ch)
-	defer ic.fallbackSendWaiter.Store(nil)
-	err := ic.Conn.SendWithTags(tags, cmd, args...)
-	if err != nil {
-		return nil, err
-	}
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case resp := <-ch:
-		return &ircevent.Batch{Message: *resp}, nil
-	case <-timeout:
-		return &ircevent.Batch{Message: ircmsg.MakeMessage(tags, "", cmd, args...)}, nil
-	}
-}
 
 func (ic *IRCClient) onDisconnect(message ircmsg.Message) {
 	ic.sendWaitersLock.Lock()
@@ -116,8 +59,7 @@ func (ic *IRCClient) sendAndWaitMessage(ctx context.Context, tags map[string]str
 	if err != nil && !errors.Is(err, ircevent.CapabilityNotNegotiated) {
 		return nil, err
 	} else if labelResp != nil {
-		if labelResp.Command == "BATCH" {
-			// TODO check that it's a multiline batch?
+		if labelResp.Command == "BATCH" && isTextCommand(labelResp.Items[0].Command) {
 			return multilineBatchToMessage(labelResp), nil
 		}
 		return &labelResp.Message, nil
@@ -128,12 +70,14 @@ func (ic *IRCClient) sendAndWaitMessage(ctx context.Context, tags map[string]str
 	wrapped := ircmsg.MakeMessage(tags, "", cmd, args...)
 	_, willEcho := ic.Conn.AcknowledgedCaps()["echo-message"]
 	ch := make(chan *ircmsg.Message, 1)
+	var timeoutCh <-chan time.Time
 	if willEcho {
 		ic.sendWaitersLock.Lock()
 		ic.sendWaiters[channel] = sendWaiter{ch: ch, cmd: waiterCmd}
 		ic.sendWaitersLock.Unlock()
+		timeoutCh = time.After(15 * time.Second)
 	} else {
-		ch <- &wrapped
+		timeoutCh = time.After(3 * time.Second)
 	}
 	err = ic.Conn.SendIRCMessage(wrapped)
 	if err != nil {
@@ -147,5 +91,56 @@ func (ic *IRCClient) sendAndWaitMessage(ctx context.Context, tags map[string]str
 			return nil, fmt.Errorf("no echo received")
 		}
 		return resp, nil
+	case <-timeoutCh:
+		if willEcho {
+			return nil, fmt.Errorf("timeout waiting for echo message")
+		}
+		// We're not waiting for an echo, which means the timeout is a success
+		return &wrapped, nil
+	}
+}
+
+func isTextCommand(cmd string) bool {
+	switch cmd {
+	case "PRIVMSG", "NOTICE", "TAGMSG", "CTCP_ACTION":
+		return true
+	default:
+		return false
+	}
+}
+
+func (ic *IRCClient) onFallbackReply(message ircmsg.Message) bool {
+	if len(message.Params) < 2 {
+		return false
+	}
+	ic.sendWaitersLock.Lock()
+	defer ic.sendWaitersLock.Unlock()
+	channel := message.Params[1]
+	waiter, ok := ic.sendWaiters[channel]
+	if !ok {
+		return false
+	}
+	isError := message.Params[0] == ic.Conn.CurrentNick() &&
+		len(message.Command) == 3 &&
+		(message.Command[0] == '4' || message.Command[0] == '5' || isNon45Error(message.Command))
+	if message.Command == waiter.cmd {
+		if message.Nick() != ic.Conn.CurrentNick() {
+			return false
+		}
+	} else if !isError {
+		return false
+	}
+	delete(ic.sendWaiters, channel)
+	waiter.ch <- &message
+	return true
+}
+
+func isNon45Error(cmd string) bool {
+	switch cmd {
+	case ircevent.ERR_INVALIDMODEPARAM, ircevent.ERR_LISTMODEALREADYSET, ircevent.ERR_LISTMODENOTSET,
+		ircevent.ERR_NOPRIVS, ircevent.ERR_NICKLOCKED:
+		return true
+	default:
+		return false
 	}
 }

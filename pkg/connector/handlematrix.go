@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/ergochat/irc-go/ircmsg"
+	"go.mau.fi/util/exslices"
 	"go.mau.fi/util/variationselector"
 	"maunium.net/go/mautrix/bridgev2"
 	"maunium.net/go/mautrix/bridgev2/database"
@@ -32,10 +33,11 @@ import (
 )
 
 var (
-	_ bridgev2.ReactionHandlingNetworkAPI  = (*IRCClient)(nil)
-	_ bridgev2.RedactionHandlingNetworkAPI = (*IRCClient)(nil)
-	_ bridgev2.TypingHandlingNetworkAPI    = (*IRCClient)(nil)
-	_ bridgev2.RoomTopicHandlingNetworkAPI = (*IRCClient)(nil)
+	_ bridgev2.ReactionHandlingNetworkAPI   = (*IRCClient)(nil)
+	_ bridgev2.RedactionHandlingNetworkAPI  = (*IRCClient)(nil)
+	_ bridgev2.TypingHandlingNetworkAPI     = (*IRCClient)(nil)
+	_ bridgev2.RoomTopicHandlingNetworkAPI  = (*IRCClient)(nil)
+	_ bridgev2.MembershipHandlingNetworkAPI = (*IRCClient)(nil)
 )
 
 type sendWaiter struct {
@@ -214,4 +216,30 @@ func (ic *IRCClient) HandleMatrixRoomTopic(ctx context.Context, msg *bridgev2.Ma
 	msg.Portal.Topic = resp.Params[1]
 	msg.Portal.TopicSet = msg.Content.Topic == resp.Params[1]
 	return true, nil
+}
+
+func (ic *IRCClient) HandleMatrixMembership(ctx context.Context, msg *bridgev2.MatrixMembershipChange) (bool, error) {
+	switch msg.Type {
+	case bridgev2.Leave:
+		channel, err := ic.parsePortalID(msg.Portal.ID)
+		if err != nil {
+			return false, err
+		} else if ic.isDM(channel) {
+			// Leaving DMs is a no-op
+			return true, nil
+		}
+		meta := ic.UserLogin.Metadata.(*UserLoginMetadata)
+		meta.Channels = exslices.FastDeleteItem(meta.Channels, channel)
+		err = ic.UserLogin.Save(ctx)
+		if err != nil {
+			return false, fmt.Errorf("failed to update autojoin channels: %w", err)
+		}
+		_, err = ic.SendRequest(ctx, nil, "", "PART", channel)
+		if err != nil {
+			return false, fmt.Errorf("failed to part channel: %w", err)
+		}
+		return true, nil
+	default:
+		return false, fmt.Errorf("unsupported membership change")
+	}
 }

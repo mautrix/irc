@@ -14,6 +14,11 @@
   * [ ] Room metadata changes
     * [ ] Name
     * [x] Topic
+  * [ ] Member changes
+    * [ ] Joining channels
+    * [x] Leaving channels
+    * [ ] Kicking users
+    * [ ] Banning users
 * IRC → Matrix
   * [ ] Message content
     * [x] Plain text
@@ -30,6 +35,11 @@
     * [ ] Name
     * [x] Topic
   * [x] Initial channel metadata
+  * [ ] Member changes
+    * [x] Joining channels
+    * [x] Leaving channels
+    * [ ] Kicking users
+    * [ ] Banning users
   * [x] User nick changes
 * Misc
   * [ ] Private chat creation by inviting Matrix ghost of IRC user to new room

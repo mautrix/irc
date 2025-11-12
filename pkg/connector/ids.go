@@ -33,6 +33,17 @@ func makeUserLoginID(netName string, userMXID id.UserID) networkid.UserLoginID {
 	return networkid.UserLoginID(fmt.Sprintf("%s:%s", netName, userMXID))
 }
 
+func parseUserLoginID(userLoginID networkid.UserLoginID) (netName string, userMXID id.UserID, err error) {
+	parts := strings.SplitN(string(userLoginID), ":", 2)
+	if len(parts) != 2 {
+		err = fmt.Errorf("invalid user login ID: %s", userLoginID)
+		return
+	}
+	netName = parts[0]
+	userMXID = id.UserID(parts[1])
+	return
+}
+
 func makeProperMessageID(netName string, id string) networkid.MessageID {
 	return networkid.MessageID(fmt.Sprintf("%s:id:%s", netName, id))
 }

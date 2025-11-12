@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"maunium.net/go/mautrix/bridgev2"
+	"maunium.net/go/mautrix/bridgev2/commands"
 
 	"go.mau.fi/mautrix-irc/pkg/connector/ircdb"
 )
@@ -36,6 +37,7 @@ var _ bridgev2.NetworkConnector = (*IRCConnector)(nil)
 func (ic *IRCConnector) Init(bridge *bridgev2.Bridge) {
 	ic.Bridge = bridge
 	ic.DB = ircdb.New(bridge.DB.Database, bridge.Log.With().Str("db_section", "irc").Logger())
+	bridge.Commands.(*commands.Processor).AddHandlers(cmdJoin)
 }
 
 func (ic *IRCConnector) Start(ctx context.Context) error {

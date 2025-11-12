@@ -73,76 +73,88 @@ func (ic *IRCClient) unlockedGetOrCreateChatInfo(channel string) *ChatInfoCache 
 	return info
 }
 
-func (ic *IRCClient) GetChatInfo(ctx context.Context, portal *bridgev2.Portal) (*bridgev2.ChatInfo, error) {
-	netName, channel, err := parsePortalID(portal.ID)
-	if err != nil {
-		return nil, err
-	} else if netName != ic.NetMeta.Name {
-		return nil, fmt.Errorf("%w (netname mismatch %q != %q)", bridgev2.ErrResolveIdentifierTryNext, netName, ic.NetMeta.Name)
+func (ic *IRCClient) getDMInfo(nick string) *bridgev2.ChatInfo {
+	nick = ic.isupport.CaseMapping(nick)
+	realNickName := ic.casemappedNames.GetDefault(nick, nick)
+	info := &bridgev2.ChatInfo{
+		Members: &bridgev2.ChatMemberList{
+			IsFull:                     true,
+			ExcludeChangesFromTimeline: true,
+			TotalMemberCount:           2,
+			OtherUserID:                ic.makeUserID(realNickName),
+			MemberMap:                  bridgev2.ChatMemberMap{},
+		},
+		Type: ptr.Ptr(database.RoomTypeDM),
 	}
-	realChannelName := ic.casemappedNames.GetDefault(channel, channel)
-	var info bridgev2.ChatInfo
-	if ic.isDM(channel) {
-		info = bridgev2.ChatInfo{
-			Members: &bridgev2.ChatMemberList{
-				IsFull:                     true,
-				ExcludeChangesFromTimeline: true,
-				TotalMemberCount:           2,
-				OtherUserID:                ic.makeUserID(realChannelName),
-				MemberMap:                  bridgev2.ChatMemberMap{},
-			},
-			Type: ptr.Ptr(database.RoomTypeDM),
-		}
-		info.Members.MemberMap.Add(bridgev2.ChatMember{
-			EventSender: ic.makeEventSender(ic.Conn.CurrentNick()),
-		})
-		info.Members.MemberMap.Add(bridgev2.ChatMember{
-			EventSender: ic.makeEventSender(realChannelName),
-		})
-	} else {
-		realInfo := ic.getCachedChatInfo(channel)
-		if realInfo == nil {
-			return &bridgev2.ChatInfo{
-				Name: ptr.Ptr(channel),
-			}, nil
-		}
-		info = bridgev2.ChatInfo{
-			Name:  ptr.Ptr(channel),
-			Topic: ptr.Ptr(realInfo.Topic),
-			Members: &bridgev2.ChatMemberList{
-				IsFull:                     realInfo.MembersComplete,
-				CheckAllLogins:             false,
-				ExcludeChangesFromTimeline: true,
-				TotalMemberCount:           len(realInfo.Members),
-				MemberMap:                  bridgev2.ChatMemberMap{},
-			},
-		}
-		for nick, pl := range realInfo.Members {
-			info.Members.MemberMap.Add(bridgev2.ChatMember{
-				EventSender: ic.makeEventSender(nick),
-				PowerLevel:  &pl,
-			})
-		}
-	}
-	return &info, nil
+	info.Members.MemberMap.Add(bridgev2.ChatMember{
+		EventSender: ic.makeEventSender(ic.Conn.CurrentNick()),
+	})
+	info.Members.MemberMap.Add(bridgev2.ChatMember{
+		EventSender: ic.makeEventSender(realNickName),
+	})
+	return info
 }
 
-func (ic *IRCClient) GetUserInfo(ctx context.Context, ghost *bridgev2.Ghost) (*bridgev2.UserInfo, error) {
-	netName, nick, err := ic.parseUserID(ghost.ID)
+func (ic *IRCClient) getChannelInfo(channel string) *bridgev2.ChatInfo {
+	channel = ic.isupport.CaseMapping(channel)
+	realChannelName := ic.casemappedNames.GetDefault(channel, channel)
+	realInfo := ic.getCachedChatInfo(channel)
+	if realInfo == nil {
+		return &bridgev2.ChatInfo{
+			Name: ptr.Ptr(realChannelName),
+		}
+	}
+	info := &bridgev2.ChatInfo{
+		Name:  ptr.Ptr(realChannelName),
+		Topic: ptr.Ptr(realInfo.Topic),
+		Members: &bridgev2.ChatMemberList{
+			IsFull:                     realInfo.MembersComplete,
+			CheckAllLogins:             false,
+			ExcludeChangesFromTimeline: true,
+			TotalMemberCount:           len(realInfo.Members),
+			MemberMap:                  bridgev2.ChatMemberMap{},
+		},
+	}
+	for nick, pl := range realInfo.Members {
+		info.Members.MemberMap.Add(bridgev2.ChatMember{
+			EventSender: ic.makeEventSender(nick),
+			PowerLevel:  &pl,
+		})
+	}
+	return info
+}
+
+func (ic *IRCClient) GetChatInfo(ctx context.Context, portal *bridgev2.Portal) (*bridgev2.ChatInfo, error) {
+	channel, err := ic.parsePortalID(portal.ID)
 	if err != nil {
 		return nil, err
-	} else if netName != ic.NetMeta.Name {
-		return nil, fmt.Errorf("%w (netname mismatch %q != %q)", bridgev2.ErrResolveIdentifierTryNext, netName, ic.NetMeta.Name)
 	}
+	if ic.isDM(channel) {
+		return ic.getDMInfo(channel), nil
+	} else {
+		return ic.getChannelInfo(channel), nil
+	}
+}
+
+func (ic *IRCClient) getUserInfo(nick string) *bridgev2.UserInfo {
 	var secure string
 	if ic.NetMeta.TLS {
 		secure = "s"
 	}
+	nick = ic.isupport.CaseMapping(nick)
 	realNick := ic.casemappedNames.GetDefault(nick, nick)
 	return &bridgev2.UserInfo{
 		Identifiers: []string{fmt.Sprintf("irc%s://%s/%s", secure, ic.NetMeta.Address, nick)},
 		Name:        &realNick,
-	}, nil
+	}
+}
+
+func (ic *IRCClient) GetUserInfo(ctx context.Context, ghost *bridgev2.Ghost) (*bridgev2.UserInfo, error) {
+	nick, err := ic.parseUserID(ghost.ID)
+	if err != nil {
+		return nil, err
+	}
+	return ic.getUserInfo(nick), nil
 }
 
 var _ bridgev2.PortalBridgeInfoFillingNetwork = (*IRCConnector)(nil)

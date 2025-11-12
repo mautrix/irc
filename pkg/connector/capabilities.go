@@ -30,8 +30,8 @@ func (ic *IRCConnector) GetBridgeInfoVersion() (info, capabilities int) {
 var genCaps = &bridgev2.NetworkGeneralCapabilities{
 	Provisioning: bridgev2.ProvisioningCapabilities{
 		ResolveIdentifier: bridgev2.ResolveIdentifierCapabilities{
-			CreateDM:       false,
-			LookupUsername: false,
+			CreateDM:       true,
+			LookupUsername: true,
 			ContactList:    false,
 			Search:         false,
 		},

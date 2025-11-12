@@ -19,6 +19,7 @@ package connector
 import (
 	"context"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -79,8 +80,8 @@ func (ic *IRCClient) makePortalID(channel string) networkid.PortalID {
 
 func parsePortalID(portalID networkid.PortalID) (netName, channel string, err error) {
 	parts := strings.SplitN(string(portalID), ":", 2)
-	if len(parts) != 2 {
-		err = fmt.Errorf("invalid portal ID: %s", portalID)
+	if len(parts) != 2 || !validateIdentifier(parts[1]) {
+		err = fmt.Errorf("%w: %s", ErrInvalidPortalIDFormat, portalID)
 		return
 	}
 	return parts[0], parts[1], nil
@@ -89,8 +90,8 @@ func parsePortalID(portalID networkid.PortalID) (netName, channel string, err er
 func (ic *IRCClient) parsePortalID(portalID networkid.PortalID) (channel string, err error) {
 	var netName string
 	netName, channel, err = parsePortalID(portalID)
-	if err == nil && netName != ic.NetMeta.Name {
-		err = fmt.Errorf("%w (netname mismatch %q != %q)", bridgev2.ErrResolveIdentifierTryNext, netName, ic.NetMeta.Name)
+	if err == nil {
+		err = ic.validateName(netName, channel)
 	}
 	return
 }
@@ -108,17 +109,47 @@ func (ic *IRCClient) makePortalKey(channel string) (key networkid.PortalKey) {
 }
 
 func (ic *IRCClient) IsThisUser(ctx context.Context, userID networkid.UserID) bool {
-	netName, nick, err := ic.parseUserID(userID)
+	netName, nick, err := parseUserID(userID)
 	return err == nil && netName == ic.NetMeta.Name && nick == ic.isupport.CaseMapping(ic.Conn.CurrentNick())
 }
 
-func (ic *IRCClient) parseUserID(userID networkid.UserID) (netName, nick string, err error) {
+func validateIdentifier(name string) bool {
+	return !strings.ContainsRune(name, ' ') && !strings.HasPrefix(name, ":")
+}
+
+func parseUserID(userID networkid.UserID) (netName, nick string, err error) {
 	parts := strings.SplitN(string(userID), "_", 2)
-	if len(parts) != 2 {
-		err = fmt.Errorf("invalid user ID format: %s", userID)
+	if len(parts) != 2 || !validateIdentifier(parts[1]) {
+		err = fmt.Errorf("%w: %s", ErrInvalidUserIDFormat, userID)
 		return
 	}
 	return parts[0], parts[1], nil
+}
+
+var (
+	ErrNameNotCasemapped     = errors.New("name is not properly casemapped")
+	ErrInvalidUserIDFormat   = errors.New("invalid user ID format")
+	ErrInvalidPortalIDFormat = errors.New("invalid portal ID format")
+)
+
+func (ic *IRCClient) parseUserID(userID networkid.UserID) (nick string, err error) {
+	var netName string
+	netName, nick, err = parseUserID(userID)
+	if err == nil {
+		err = ic.validateName(netName, nick)
+	}
+	return
+}
+
+func (ic *IRCClient) validateName(netName, name string) error {
+	if !ic.Main.networkExists(netName) {
+		return fmt.Errorf("%w %s", ErrUnknownNetwork, netName)
+	} else if netName != ic.NetMeta.Name {
+		return fmt.Errorf("%w (netname mismatch %q != %q)", bridgev2.ErrResolveIdentifierTryNext, netName, ic.NetMeta.Name)
+	} else if name != ic.isupport.CaseMapping(name) {
+		return ErrNameNotCasemapped
+	}
+	return nil
 }
 
 func (ic *IRCClient) makeUserID(nick string) networkid.UserID {

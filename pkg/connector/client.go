@@ -75,7 +75,7 @@ func (ic *IRCConnector) LoadUserLogin(ctx context.Context, login *bridgev2.UserL
 		RealName: meta.RealName,
 		RequestCaps: []string{
 			"message-tags", "server-time", "echo-message", "chghost", "draft/message-redaction",
-			"batch", "draft/multiline", "labeled-response",
+			"batch", "draft/multiline", "labeled-response", "draft/relaymsg",
 		},
 		QuitMessage: "Exiting the Matrix",
 		Version:     "mautrix-irc",

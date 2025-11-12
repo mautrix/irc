@@ -20,6 +20,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
+	"strings"
+	"unicode"
 
 	"github.com/ergochat/irc-go/ircmsg"
 	"go.mau.fi/util/exslices"
@@ -48,6 +51,14 @@ type sendWaiter struct {
 var (
 	ErrNoPublicMedia = bridgev2.WrapErrorInStatus(errors.New("matrix connector doesn't support public media")).WithIsCertain(true).WithErrorAsMessage().WithErrorReason(event.MessageStatusUnsupported)
 )
+
+const specialChars = `!+%@&#$:'"?*,. `
+
+func filterPerMessageName(nick string) string {
+	return string(slices.DeleteFunc([]rune(nick), func(r rune) bool {
+		return r > unicode.MaxLatin1 || strings.ContainsRune(specialChars, r) || !unicode.IsPrint(r)
+	}))
+}
 
 func (ic *IRCClient) HandleMatrixMessage(ctx context.Context, msg *bridgev2.MatrixMessage) (message *bridgev2.MatrixMessageResponse, err error) {
 	channel, err := ic.parsePortalID(msg.Portal.ID)
@@ -85,7 +96,28 @@ func (ic *IRCClient) HandleMatrixMessage(ctx context.Context, msg *bridgev2.Matr
 			tags["+draft/reply"] = msgID
 		}
 	}
-	resp, err := ic.SendRequest(ctx, tags, waiterCmd, cmd, channel, body)
+	var resp *ircmsg.Message
+	relayChar, canRelay := ic.Conn.AcknowledgedCaps()["draft/relaymsg"]
+	if canRelay && (msg.OrigSender != nil || msg.Content.BeeperPerMessageProfile != nil) {
+		var overrideNick string
+		if msg.OrigSender != nil {
+			overrideNick = filterPerMessageName(msg.OrigSender.FormattedName)
+			if overrideNick == "" {
+				overrideNick = filterPerMessageName(msg.OrigSender.UserID.Localpart())
+			}
+		} else {
+			overrideNick = filterPerMessageName(msg.Content.BeeperPerMessageProfile.Displayname)
+		}
+		if overrideNick == "" {
+			return nil, fmt.Errorf("invalid relay nick")
+		}
+		if relayChar != "" {
+			relayChar = "m" + relayChar
+		}
+		resp, err = ic.SendRequest(ctx, tags, waiterCmd, "RELAYMSG", channel, relayChar+overrideNick, body)
+	} else {
+		resp, err = ic.SendRequest(ctx, tags, waiterCmd, cmd, channel, body)
+	}
 	if err != nil {
 		return nil, err
 	}

@@ -259,6 +259,11 @@ func getTimeTag(msg ircmsg.Message) time.Time {
 	return ts
 }
 
+type WrappedMessage struct {
+	*ircmsg.Message
+	RelayedNick string
+}
+
 func (ic *IRCClient) onMessage(msg ircmsg.Message) {
 	if ic.onPotentialEchoMessage(msg) {
 		return
@@ -270,6 +275,13 @@ func (ic *IRCClient) onMessage(msg ircmsg.Message) {
 		return
 	} else if ic.isDM(targetChannel) {
 		targetChannel = senderNick
+	}
+	_, canRelay := ic.Conn.AcknowledgedCaps()["draft/relaymsg"]
+	_, relaySourceNick := msg.GetTag("draft/relaymsg")
+	var relayedNick string
+	if canRelay && relaySourceNick != "" {
+		relayedNick = senderNick
+		senderNick = relaySourceNick
 	}
 	ic.UserLogin.Log.Trace().Any("evt", msg).Msg("Received message")
 	meta := simplevent.EventMeta{
@@ -323,9 +335,12 @@ func (ic *IRCClient) onMessage(msg ircmsg.Message) {
 			})
 		}
 	default:
-		ic.UserLogin.QueueRemoteEvent(&simplevent.Message[*ircmsg.Message]{
-			EventMeta:          meta,
-			Data:               &msg,
+		ic.UserLogin.QueueRemoteEvent(&simplevent.Message[*WrappedMessage]{
+			EventMeta: meta,
+			Data: &WrappedMessage{
+				Message:     &msg,
+				RelayedNick: relayedNick,
+			},
 			ID:                 makeMessageID(ic.NetMeta.Name, &msg),
 			ConvertMessageFunc: ic.convertMessage,
 		})
@@ -336,7 +351,7 @@ func (ic *IRCClient) convertMessage(
 	ctx context.Context,
 	portal *bridgev2.Portal,
 	intent bridgev2.MatrixAPI,
-	data *ircmsg.Message,
+	data *WrappedMessage,
 ) (*bridgev2.ConvertedMessage, error) {
 	content := ircfmt.ASCIIToContent(data.Params[1])
 	if data.Command == "NOTICE" {
@@ -351,6 +366,13 @@ func (ic *IRCClient) convertMessage(
 			MessageID: makeProperMessageID(ic.NetMeta.Name, replyToID),
 			PartID:    ptr.Ptr(networkid.PartID("")),
 		}
+	}
+	if data.RelayedNick != "" {
+		content.BeeperPerMessageProfile = &event.BeeperPerMessageProfile{
+			ID:          ic.isupport.CaseMapping(data.RelayedNick),
+			Displayname: data.RelayedNick,
+		}
+		content.AddPerMessageProfileFallback()
 	}
 	return &bridgev2.ConvertedMessage{
 		ReplyTo: replyTo,

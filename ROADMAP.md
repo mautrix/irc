@@ -11,6 +11,7 @@
   * [x] Reactions ([`+draft/react`](https://ircv3.net/specs/client-tags/reaction.html))
   * [x] Redactions ([`draft/message-redaction`](https://ircv3.net/specs/extensions/message-redaction))
   * [x] Typing notifications ([`typing`](https://ircv3.net/specs/client-tags/typing))
+  * [x] Relaying messages using [`draft/relaymsg`](https://github.com/ircv3/ircv3-specifications/pull/417)
   * [ ] Room metadata changes
     * [ ] Name
     * [x] Topic
@@ -30,6 +31,7 @@
   * [x] Reactions ([`+draft/react`](https://ircv3.net/specs/client-tags/reaction.html))
   * [x] Redactions ([`draft/message-redaction`](https://ircv3.net/specs/extensions/message-redaction))
   * [x] Typing notifications ([`typing`](https://ircv3.net/specs/client-tags/typing))
+  * [x] Relayed messages into per-message profiles ([`draft/relaymsg`](https://github.com/ircv3/ircv3-specifications/pull/417))
   * [ ] Backfilling messages ([`chathistory`](https://ircv3.net/specs/batches/chathistory))
   * [ ] Channel metadata changes
     * [ ] Name

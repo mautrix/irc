@@ -19,6 +19,7 @@ package connector
 import (
 	"context"
 
+	"go.mau.fi/util/ptr"
 	"maunium.net/go/mautrix/bridgev2"
 	"maunium.net/go/mautrix/event"
 )
@@ -81,6 +82,16 @@ var caps = &event.RoomFeatures{
 	MaxTextLength: 500,
 }
 
+var relayCaps = ptr.Clone(caps)
+
+func init() {
+	relayCaps.PerMessageProfileRelay = true
+}
+
 func (ic *IRCClient) GetCapabilities(ctx context.Context, portal *bridgev2.Portal) *event.RoomFeatures {
+	_, canRelay := ic.Conn.AcknowledgedCaps()["draft/relaymsg"]
+	if canRelay {
+		return relayCaps
+	}
 	return caps
 }

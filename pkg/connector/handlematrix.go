@@ -114,7 +114,7 @@ func (ic *IRCClient) HandleMatrixMessage(ctx context.Context, msg *bridgev2.Matr
 		if relayChar != "" {
 			relayChar = "m" + relayChar
 		}
-		resp, err = ic.SendRequest(ctx, tags, waiterCmd, "RELAYMSG", channel, relayChar+overrideNick, body)
+		resp, err = ic.SendRequest(ctx, tags, "", "RELAYMSG", channel, relayChar+overrideNick, body)
 	} else {
 		resp, err = ic.SendRequest(ctx, tags, waiterCmd, cmd, channel, body)
 	}

@@ -62,14 +62,15 @@ func (ie *IRCError) Error() string {
 }
 
 func (ic *IRCClient) SendRequest(ctx context.Context, tags map[string]string, waiterCmd, cmd string, args ...string) (*ircmsg.Message, error) {
-	if waiterCmd == "" {
-		waiterCmd = cmd
-	}
 	channel := args[0]
 	labelResp, err := ic.Conn.GetLabeledResponse(tags, cmd, args...)
 	if err != nil && !errors.Is(err, ircevent.CapabilityNotNegotiated) {
 		return nil, err
 	} else if labelResp != nil {
+		waiterCmd = cmd
+		if cmd == "RELAYMSG" {
+			waiterCmd = "PRIVMSG"
+		}
 		if labelResp.Command == "BATCH" {
 			switch labelResp.Params[1] {
 			case "draft/multiline":
@@ -91,6 +92,9 @@ func (ic *IRCClient) SendRequest(ctx context.Context, tags map[string]string, wa
 			return nil, &IRCError{Msg: &labelResp.Message}
 		}
 		return &labelResp.Message, nil
+	}
+	if waiterCmd == "" {
+		waiterCmd = cmd
 	}
 	wrapped := ircmsg.MakeMessage(tags, "", cmd, args...)
 	_, willEcho := ic.Conn.AcknowledgedCaps()["echo-message"]

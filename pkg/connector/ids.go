@@ -110,7 +110,11 @@ func (ic *IRCClient) makePortalKey(channel string) (key networkid.PortalKey) {
 
 func (ic *IRCClient) IsThisUser(ctx context.Context, userID networkid.UserID) bool {
 	netName, nick, err := parseUserID(userID)
-	return err == nil && netName == ic.NetMeta.Name && nick == ic.isupport.CaseMapping(ic.Conn.CurrentNick())
+	currentNick := ic.Conn.CurrentNick()
+	if currentNick == "" {
+		currentNick = ic.Conn.PreferredNick()
+	}
+	return err == nil && netName == ic.NetMeta.Name && nick == ic.isupport.CaseMapping(currentNick)
 }
 
 func validateIdentifier(name string) bool {

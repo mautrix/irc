@@ -18,3 +18,5 @@ All setup and usage instructions are located on [docs.mau.fi]. Some quick links:
 
 ## Discussion
 Matrix room: [#irc:maunium.net](https://matrix.to/#/#irc:maunium.net)
+
+IRC channel: [#mautrix-irc](ircs://irc.ergo.chat:6697/#mautrix-irc) on [irc.ergo.chat](https://ergo.chat/about-network)

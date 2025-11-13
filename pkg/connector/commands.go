@@ -39,6 +39,44 @@ func getLogins(user *bridgev2.User) string {
 	return strings.Join(loginNames, ", ")
 }
 
+var cmdSetSASL = &commands.FullHandler{
+	Func: func(ce *commands.Event) {
+		if len(ce.Args) == 0 {
+			ce.Reply("Usage: $cmdprefix set-sasl <network> <new username>:<new password>")
+			return
+		}
+		login := ce.Bridge.GetCachedUserLoginByID(makeUserLoginID(ce.Args[0], ce.User.MXID))
+		if login == nil {
+			ce.Reply("You are not logged into %s (active logins: %s)", format.SafeMarkdownCode(ce.Args[0]), getLogins(ce.User))
+			return
+		}
+		remainingArgs := strings.TrimSpace(strings.TrimPrefix(ce.RawArgs, ce.Args[0]))
+		meta := login.Metadata.(*UserLoginMetadata)
+		if !strings.ContainsRune(remainingArgs, ':') {
+			ce.Reply("Current SASL credentials: %s:%s", format.SafeMarkdownCode(meta.SASLUser), format.SafeMarkdownCode(meta.Password))
+		} else {
+			parts := strings.SplitN(remainingArgs, ":", 1)
+			meta.SASLUser = parts[0]
+			meta.Password = parts[1]
+			err := login.Save(ce.Ctx)
+			if err != nil {
+				ce.Log.Err(err).Msg("Failed to save login after changing SASL credentials")
+				ce.Reply("Failed to save new SASL credentials")
+				return
+			}
+			ce.Reply("Changed SASL credentials to %s:%s", format.SafeMarkdownCode(meta.SASLUser), format.SafeMarkdownCode(meta.Password))
+		}
+	},
+	Name:    "set-sasl",
+	Aliases: []string{"sasl"},
+	Help: commands.HelpMeta{
+		Section:     commands.HelpSectionAuth,
+		Description: "Change your SASL credentials",
+		Args:        "<network> <new username> <new password>",
+	},
+	RequiresLogin: true,
+}
+
 var cmdJoin = &commands.FullHandler{
 	Func: func(ce *commands.Event) {
 		if len(ce.Args) == 0 {

@@ -21,20 +21,20 @@
     * [ ] Kicking users
     * [ ] Banning users
 * IRC → Matrix
-  * [ ] Message content
+  * [x] Message content
     * [x] Plain text
     * [x] Formatted messages
     * [x] Multiline messages ([`draft/multiline-messages`](https://ircv3.net/specs/extensions/multiline))
+    * [x] Relayed messages into per-message profiles ([`draft/relaymsg`](https://github.com/ircv3/ircv3-specifications/pull/417))
   * [x] Server time ([`server-time`](https://ircv3.net/specs/extensions/server-time))
   * [x] Message IDs ([`message-ids`](https://ircv3.net/specs/extensions/message-ids))
   * [x] Replies ([`+draft/reply`](https://ircv3.net/specs/client-tags/reply.html))
   * [x] Reactions ([`+draft/react`](https://ircv3.net/specs/client-tags/reaction.html))
   * [x] Redactions ([`draft/message-redaction`](https://ircv3.net/specs/extensions/message-redaction))
   * [x] Typing notifications ([`typing`](https://ircv3.net/specs/client-tags/typing))
-  * [x] Relayed messages into per-message profiles ([`draft/relaymsg`](https://github.com/ircv3/ircv3-specifications/pull/417))
   * [ ] Backfilling messages ([`chathistory`](https://ircv3.net/specs/batches/chathistory))
   * [ ] Channel metadata changes
-    * [ ] Name
+    * [ ] Name ([`draft/channel-rename`](https://ircv3.net/specs/extensions/channel-rename))
     * [x] Topic
   * [x] Initial channel metadata
   * [ ] Member changes
@@ -43,5 +43,3 @@
     * [ ] Kicking users
     * [ ] Banning users
   * [x] User nick changes
-* Misc
-  * [ ] Private chat creation by inviting Matrix ghost of IRC user to new room

@@ -55,7 +55,7 @@ var cmdSetSASL = &commands.FullHandler{
 		if !strings.ContainsRune(remainingArgs, ':') {
 			ce.Reply("Current SASL credentials: %s:%s", format.SafeMarkdownCode(meta.SASLUser), format.SafeMarkdownCode(meta.Password))
 		} else {
-			parts := strings.SplitN(remainingArgs, ":", 1)
+			parts := strings.SplitN(remainingArgs, ":", 2)
 			meta.SASLUser = parts[0]
 			meta.Password = parts[1]
 			err := login.Save(ce.Ctx)

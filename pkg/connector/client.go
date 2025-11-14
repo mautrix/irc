@@ -235,5 +235,5 @@ func (ic *IRCClient) IsLoggedIn() bool {
 }
 
 func (ic *IRCClient) LogoutRemote(ctx context.Context) {
-	// There's no logout, just disconnect
+	ic.Disconnect()
 }

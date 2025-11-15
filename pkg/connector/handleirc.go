@@ -126,7 +126,7 @@ func (ic *IRCClient) onNick(msg ircmsg.Message) {
 		ch.Meta.Members[newNick] = ch.PowerLevel
 		mm := bridgev2.ChatMemberMap{}
 		mm.Set(bridgev2.ChatMember{
-			EventSender: ic.makeEventSender(prevNick),
+			EventSender: ic.makeGhostOnlyEventSender(prevNick),
 			Membership:  event.MembershipLeave,
 			PowerLevel:  ptr.Ptr(0),
 			MemberEventExtra: map[string]any{
@@ -135,7 +135,7 @@ func (ic *IRCClient) onNick(msg ircmsg.Message) {
 			PrevMembership: event.MembershipJoin,
 		})
 		mm.Set(bridgev2.ChatMember{
-			EventSender: ic.makeEventSender(newNick),
+			EventSender: ic.makeGhostOnlyEventSender(newNick),
 			Membership:  event.MembershipJoin,
 			PowerLevel:  ptr.Ptr(ch.PowerLevel),
 			MemberEventExtra: map[string]any{
@@ -181,12 +181,12 @@ func (ic *IRCClient) onQuit(msg ircmsg.Message) {
 				},
 				PortalKey: ic.makePortalKey(ch.Name),
 				Timestamp: getTimeTag(msg),
-				Sender:    ic.makeEventSender(nick),
+				Sender:    ic.makeGhostOnlyEventSender(nick),
 			},
 			ChatInfoChange: &bridgev2.ChatInfoChange{
 				MemberChanges: &bridgev2.ChatMemberList{
 					MemberMap: bridgev2.ChatMemberMap{}.Set(bridgev2.ChatMember{
-						EventSender: ic.makeEventSender(nick),
+						EventSender: ic.makeGhostOnlyEventSender(nick),
 						Membership:  event.MembershipLeave,
 						PowerLevel:  ptr.Ptr(0),
 						MemberEventExtra: map[string]any{

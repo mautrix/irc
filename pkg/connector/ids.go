@@ -165,6 +165,12 @@ func (ic *IRCClient) makeUserID(nick string) networkid.UserID {
 	return networkid.UserID(fmt.Sprintf("%s_%s", ic.NetMeta.Name, mappedNick))
 }
 
+func (ic *IRCClient) makeGhostOnlyEventSender(nick string) bridgev2.EventSender {
+	return bridgev2.EventSender{
+		Sender: ic.makeUserID(nick),
+	}
+}
+
 func (ic *IRCClient) makeEventSender(nick string) bridgev2.EventSender {
 	es := bridgev2.EventSender{
 		IsFromMe: nick == ic.Conn.CurrentNick(),

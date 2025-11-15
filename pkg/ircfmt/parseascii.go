@@ -51,6 +51,9 @@ func parseASCII(text string, noReturnWithoutFormatting bool) string {
 	var tagStack exslices.Stack[atom.Atom]
 	var currentFg, currentBg string
 	updateColors := func(newFg, newBg string) {
+		if currentFg == newFg && currentBg == newBg {
+			return
+		}
 		if currentFg != "" || currentBg != "" {
 			var readdTags []atom.Atom
 			for tag := range tagStack.PopIter() {
@@ -77,6 +80,8 @@ func parseASCII(text string, noReturnWithoutFormatting bool) string {
 		currentFg, currentBg = newFg, newBg
 	}
 	doReset := func() {
+		currentBg = ""
+		currentFg = ""
 		for tag := range tagStack.PopIter() {
 			_, _ = fmt.Fprintf(&out, "</%s>", tag)
 		}
@@ -89,22 +94,18 @@ func parseASCII(text string, noReturnWithoutFormatting bool) string {
 		out.WriteString(event.TextToHTML(text[:nextIdx]))
 		meta := text[nextIdx]
 		text = text[nextIdx+1:]
+		var tag atom.Atom
 		switch meta {
 		case bold[0]:
-			out.WriteString("<strong>")
-			tagStack.Push(atom.Strong)
+			tag = atom.Strong
 		case monospace[0]:
-			out.WriteString("<code>")
-			tagStack.Push(atom.Code)
+			tag = atom.Code
 		case italic[0]:
-			out.WriteString("<em>")
-			tagStack.Push(atom.Em)
+			tag = atom.Em
 		case strikethrough[0]:
-			out.WriteString("<del>")
-			tagStack.Push(atom.Del)
+			tag = atom.Del
 		case underline[0]:
-			out.WriteString("<u>")
-			tagStack.Push(atom.U)
+			tag = atom.U
 		case color[0]:
 			newFg, newBg, rest := parseColor(text, currentBg)
 			updateColors(newFg, newBg)
@@ -119,6 +120,10 @@ func parseASCII(text string, noReturnWithoutFormatting bool) string {
 			doReset()
 		default:
 			panic(fmt.Errorf("impossible case: IndexAny(metacharacters) returned %c", meta))
+		}
+		if tag != 0 && !tagStack.Has(tag) {
+			_, _ = fmt.Fprintf(&out, "<%s>", tag)
+			tagStack.Push(tag)
 		}
 	}
 	if out.Len() == 0 {

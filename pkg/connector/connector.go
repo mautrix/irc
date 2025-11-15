@@ -26,6 +26,7 @@ import (
 	"maunium.net/go/mautrix/bridgev2/networkid"
 
 	"go.mau.fi/mautrix-irc/pkg/connector/ircdb"
+	"go.mau.fi/mautrix-irc/pkg/identd"
 )
 
 type netNickPair struct {
@@ -37,6 +38,7 @@ type IRCConnector struct {
 	Bridge *bridgev2.Bridge
 	Config Config
 	DB     *ircdb.IRCDB
+	Identd *identd.Identd
 
 	userLogins     map[netNickPair]*IRCClient
 	userLoginsLock sync.RWMutex
@@ -48,6 +50,11 @@ func (ic *IRCConnector) Init(bridge *bridgev2.Bridge) {
 	ic.userLogins = make(map[netNickPair]*IRCClient)
 	ic.Bridge = bridge
 	ic.DB = ircdb.New(bridge.DB.Database, bridge.Log.With().Str("db_section", "irc").Logger())
+	ic.Identd = identd.NewIdentd(
+		bridge.Log.With().Str("component", "identd").Logger(),
+		ic.Config.Identd.Address,
+		ic.Config.Identd.StrictRemote,
+	)
 	bridge.Commands.(*commands.Processor).AddHandlers(cmdSetSASL, cmdJoin, cmdRaw)
 }
 
@@ -59,6 +66,10 @@ func (ic *IRCConnector) Start(ctx context.Context) error {
 	err = ic.DB.FillCache(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to fill ident db cache: %w", err)
+	}
+	err = ic.Identd.Start()
+	if err != nil {
+		return fmt.Errorf("failed to start identd: %w", err)
 	}
 	return nil
 }

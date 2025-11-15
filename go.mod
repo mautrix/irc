@@ -40,4 +40,4 @@ require (
 	maunium.net/go/mauflag v1.0.0 // indirect
 )
 
-replace github.com/ergochat/irc-go => github.com/tulir/irc-go v0.0.0-20251112191539-20a12dd1ed30
+replace github.com/ergochat/irc-go => github.com/tulir/irc-go v0.0.0-20251115223015-7a057b35bea2

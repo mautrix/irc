@@ -30,3 +30,10 @@ networks:
         address: irc.ergo.chat:6697
         tls: true
         ctcp: false
+
+# Settings for identd
+identd:
+    # Address to bind the identd server to
+    address: :1113
+    # Whether to check the remote address too instead of only ports
+    strict_remote: false

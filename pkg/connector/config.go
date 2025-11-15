@@ -38,8 +38,14 @@ type NetworkConfig struct {
 	Name        string              `yaml:"-"`
 }
 
+type IdentdConfig struct {
+	Address      string `yaml:"address"`
+	StrictRemote bool   `yaml:"strict_remote"`
+}
+
 type Config struct {
 	Networks map[string]*NetworkConfig `yaml:"networks"`
+	Identd   IdentdConfig              `yaml:"identd"`
 }
 
 func (ic *IRCConnector) GetConfig() (example string, data any, upgrader up.Upgrader) {
@@ -77,4 +83,6 @@ func (c *Config) PostProcess() (err error) {
 
 func upgradeConfig(helper up.Helper) {
 	helper.Copy(up.Map, "networks")
+	helper.Copy(up.Str|up.Null, "identd.address")
+	helper.Copy(up.Bool, "identd.strict_remote")
 }

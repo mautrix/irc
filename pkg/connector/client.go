@@ -83,6 +83,7 @@ func (ic *IRCConnector) LoadUserLogin(ctx context.Context, login *bridgev2.UserL
 		EnableCTCP:  serverConfig.CTCP,
 		Debug:       login.Log.GetLevel() == zerolog.TraceLevel,
 		Log:         log.New(login.Log.With().Str("component", "irc").Logger(), "", 0),
+		PutIdent:    ic.Identd.Add,
 	}
 	if meta.SASLUser != "" {
 		conn.SASLLogin = meta.SASLUser

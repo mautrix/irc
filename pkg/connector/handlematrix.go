@@ -251,8 +251,14 @@ func (ic *IRCClient) HandleMatrixRoomTopic(ctx context.Context, msg *bridgev2.Ma
 }
 
 func (ic *IRCClient) HandleMatrixMembership(ctx context.Context, msg *bridgev2.MatrixMembershipChange) (*bridgev2.MatrixMembershipResult, error) {
+	if msg.Type.IsSelf && msg.OrigSender != nil {
+		return nil, nil
+	}
 	switch msg.Type {
 	case bridgev2.Leave:
+		if msg.OrigSender != nil {
+			return nil, nil
+		}
 		channel, err := ic.parsePortalID(msg.Portal.ID)
 		if err != nil {
 			return nil, err

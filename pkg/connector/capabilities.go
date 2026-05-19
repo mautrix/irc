@@ -25,7 +25,7 @@ import (
 )
 
 func (ic *IRCConnector) GetBridgeInfoVersion() (info, capabilities int) {
-	return 1, 1
+	return 1, 2
 }
 
 var genCaps = &bridgev2.NetworkGeneralCapabilities{
@@ -45,7 +45,7 @@ func (ic *IRCConnector) GetCapabilities() *bridgev2.NetworkGeneralCapabilities {
 }
 
 var caps = &event.RoomFeatures{
-	ID: "fi.mau.irc.capabilities.2025_11_10",
+	ID: "fi.mau.irc.capabilities.2026_05_19",
 	File: map[event.CapabilityMsgType]*event.FileFeatures{
 		event.MsgImage: {
 			MimeTypes:        map[string]event.CapabilitySupportLevel{"*/*": event.CapLevelFullySupported},
@@ -73,6 +73,11 @@ var caps = &event.RoomFeatures{
 			MaxCaptionLength: 400,
 		},
 		event.CapMsgSticker: {
+			MimeTypes:        map[string]event.CapabilitySupportLevel{"*/*": event.CapLevelFullySupported},
+			Caption:          event.CapLevelFullySupported,
+			MaxCaptionLength: 400,
+		},
+		event.CapMsgGIF: {
 			MimeTypes:        map[string]event.CapabilitySupportLevel{"*/*": event.CapLevelFullySupported},
 			Caption:          event.CapLevelFullySupported,
 			MaxCaptionLength: 400,

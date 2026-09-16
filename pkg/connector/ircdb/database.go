@@ -44,14 +44,10 @@ type IRCDB struct {
 	identToMXIDCache map[string]*IdentData
 }
 
-var table dbutil.UpgradeTable
+var table = dbutil.BuildUpgradeTable().WithFS(upgrades).Finish()
 
 //go:embed *.sql
 var upgrades embed.FS
-
-func init() {
-	table.RegisterFS(upgrades)
-}
 
 func New(db *dbutil.Database, log zerolog.Logger) *IRCDB {
 	db = db.Child("irc_version", table, dbutil.ZeroLogger(log))

@@ -1,0 +1,38 @@
+{
+	"namespace": "mautrix-irc",
+	"messages": [
+		{
+			"key": "mautrix-irc:login.field.credentials.description",
+			"english": "SASL username and password separated by a colon. To disable authentication, enter just a single colon (`:`)"
+		},
+		{
+			"key": "mautrix-irc:login.field.credentials.name",
+			"english": "Auth credentials"
+		},
+		{
+			"key": "mautrix-irc:login.field.network.name",
+			"english": "IRC network"
+		},
+		{
+			"key": "mautrix-irc:login.field.nick.name",
+			"english": "IRC nick"
+		},
+		{
+			"key": "mautrix-irc:login.flow.nick.description",
+			"english": "Connect to an IRC network with the address, nick and optionally password"
+		},
+		{
+			"key": "mautrix-irc:login.flow.nick.name",
+			"english": "Nick"
+		},
+		{
+			"key": "mautrix-irc:login.step.complete.instructions",
+			"english": "Connecting to {network} as {nick}",
+			"params": [
+				"network",
+				"nick"
+			],
+			"comment": "network is the display name of the IRC network, nick is the IRC nickname"
+		}
+	]
+}

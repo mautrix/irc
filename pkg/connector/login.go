@@ -25,6 +25,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"go.mau.fi/util/l10n"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/bridgev2"
 	"maunium.net/go/mautrix/bridgev2/database"
@@ -32,8 +33,8 @@ import (
 )
 
 var loginFlows = []bridgev2.LoginFlow{{
-	Name:        "Nick",
-	Description: "Connect to an IRC network with the address, nick and optionally password",
+	Name:        msgFlowNickName.Message(),
+	Description: msgFlowNickDescription.Message(),
 	ID:          "nick",
 }}
 
@@ -62,24 +63,23 @@ func (zl *IRCLogin) Start(ctx context.Context) (*bridgev2.LoginStep, error) {
 		return nil, err
 	}
 	return &bridgev2.LoginStep{
-		Type:         bridgev2.LoginStepTypeUserInput,
-		StepID:       "fi.mau.irc.credentials",
-		Instructions: "",
+		Type:   bridgev2.LoginStepTypeUserInput,
+		StepID: "fi.mau.irc.credentials",
 		UserInputParams: &bridgev2.LoginUserInputParams{
 			Fields: []bridgev2.LoginInputDataField{{
 				Type:    bridgev2.LoginInputFieldTypeSelect,
 				ID:      "network",
-				Name:    "IRC network",
-				Options: slices.Collect(maps.Keys(zl.Main.Config.Networks)),
+				Name:    msgFieldNetworkName.Message(),
+				Options: bridgev2.UnlocalizedOptions(slices.Collect(maps.Keys(zl.Main.Config.Networks))...),
 			}, {
 				Type: bridgev2.LoginInputFieldTypeUsername,
 				ID:   "nick",
-				Name: "IRC nick",
+				Name: msgFieldNickName.Message(),
 			}, {
 				Type:        bridgev2.LoginInputFieldTypePassword,
 				ID:          "credentials",
-				Name:        "Auth credentials",
-				Description: "SASL username and password separated by a colon. To disable authentication, enter just a single colon (`:`)",
+				Name:        msgFieldCredentialsName.Message(),
+				Description: msgFieldCredentialsDescription.Message(),
 				Pattern:     "^.*:.*$",
 			}},
 		},
@@ -127,7 +127,7 @@ func (zl *IRCLogin) SubmitUserInput(ctx context.Context, input map[string]string
 	return &bridgev2.LoginStep{
 		Type:         bridgev2.LoginStepTypeComplete,
 		StepID:       "fi.mau.irc.complete",
-		Instructions: fmt.Sprintf("Connecting to %s as %s", netMeta.DisplayName, meta.Nick),
+		Instructions: msgStepCompleteInstructions.Render(l10n.Params{"network": netMeta.DisplayName, "nick": meta.Nick}),
 		CompleteParams: &bridgev2.LoginCompleteParams{
 			UserLoginID: login.ID,
 			UserLogin:   login,

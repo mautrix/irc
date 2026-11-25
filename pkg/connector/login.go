@@ -81,6 +81,7 @@ func (zl *IRCLogin) Start(ctx context.Context) (*bridgev2.LoginStep, error) {
 				Name:        msgFieldCredentialsName.Message(),
 				Description: msgFieldCredentialsDescription.Message(),
 				Pattern:     "^.*:.*$",
+				Placeholder: msgFieldCredentialsPlaceholder.Message(),
 			}},
 		},
 	}, nil

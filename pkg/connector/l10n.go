@@ -29,6 +29,7 @@ var (
 	msgFieldNickName               = L.Define("login.field.nick.name", "IRC nick")
 	msgFieldCredentialsName        = L.Define("login.field.credentials.name", "Auth credentials")
 	msgFieldCredentialsDescription = L.Define("login.field.credentials.description", "SASL username and password separated by a colon. To disable authentication, enter just a single colon (`:`)")
+	msgFieldCredentialsPlaceholder = L.Define("login.field.credentials.placeholder", "username:password")
 	msgStepCompleteInstructions    = L.Define(
 		"login.step.complete.instructions", "Connecting to {network} as {nick}",
 		l10n.WithComment("network is the display name of the IRC network, nick is the IRC nickname"),
